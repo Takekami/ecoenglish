@@ -1,5 +1,9 @@
 # .github/workflows/deploy_podcast.yml
 name: Deploy EcoEnglish Lambda Container
+
+on:
+  workflow_dispatch:
+
 permissions:
   id-token: write
   contents: read
