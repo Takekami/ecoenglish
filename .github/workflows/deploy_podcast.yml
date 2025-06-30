@@ -1,51 +1,48 @@
-# .github/workflows/deploy_podcast.yml
 name: Deploy EcoEnglish Lambda Container
 
-on:
+on:                       # 手動トリガーだけ
   workflow_dispatch:
 
 permissions:
-  id-token: write
+  id-token: write         # OIDC でクロスアカウント Assume
   contents: read
 
-on:
-  push:
-    branches: [ main ]
-    paths:
-      - "**.py"
-      - "Dockerfile"
-      - "requirements.txt"
-      - ".github/workflows/deploy_podcast.yml"
+env:                      # 変えるのはここだけ
+  AWS_REGION: ap-southeast-2
+  ECR_REGISTRY: 651706750291.dkr.ecr.ap-southeast-2.amazonaws.com
+  ECR_REPOSITORY: ecoenglish
+  FUNCTION_NAME: ecoenglish
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      # 1) リポジトリをチェックアウト
+      - uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      # 2) GitHub → AWS ロールを Assume（OIDC）
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-          aws-region: ap-southeast-2
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
+      # 3) ECR へログイン
+      - uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, and push Docker image to ECR
+      # 4) Docker build & push
+      - name: Build and push image
         env:
-          ECR_REGISTRY: 651706750291.dkr.ecr.ap-southeast-2.amazonaws.com
-          ECR_REPOSITORY: ecoenglish
+          IMAGE_URI: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
-          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:latest"
-          docker build --platform linux/amd64 -t "$IMAGE_URI" .
+          docker build --platform linux/amd64 --provenance=false -t "$IMAGE_URI" .
           docker push "$IMAGE_URI"
-          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
+          echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
 
-      - name: Update Lambda function with new image
+      # 5) Lambda 関数を更新
+      - name: Update Lambda
         run: |
           aws lambda update-function-code \
-            --function-name ecoenglish \
-            --image-uri $IMAGE_URI
+            --function-name $FUNCTION_NAME \
+            --image-uri $IMAGE_URI \
+            --region $AWS_REGION
