@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual env
+.venv/
+env/
+venv/
+
+# Logs
+*.log
+
+# Mac / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Secrets
+.env
+
+# Build & Output
+*.zip
+output/
+rss.xml
+lambda_package.zip

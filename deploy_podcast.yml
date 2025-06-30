@@ -1,0 +1,37 @@
+name: Deploy Podcast Lambda
+on:
+  push:
+    paths:
+      - "src/**"
+      - "Dockerfile"
+      - "pyproject.toml"
+      - ".github/workflows/deploy_podcast.yml"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS creds
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ap-southeast-2
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build, tag, push
+        run: |
+          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/podcast-lambda:$(git rev-parse --short HEAD)"
+          docker build -t "$IMAGE_URI" .
+          docker push "$IMAGE_URI"
+          echo "image=$IMAGE_URI" >> $GITHUB_ENV
+
+      - name: Update Lambda
+        run: |
+          aws lambda update-function-code \
+            --function-name english-learning-podcast \
+            --image-uri ${{ env.image }}
