@@ -1,37 +1,44 @@
-name: Deploy Podcast Lambda
+# .github/workflows/deploy_podcast.yml
+name: Deploy EcoEnglish Lambda Container
+
 on:
   push:
+    branches: [ main ]
     paths:
-      - "src/**"
+      - "**.py"
       - "Dockerfile"
-      - "pyproject.toml"
+      - "requirements.txt"
       - ".github/workflows/deploy_podcast.yml"
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Configure AWS creds
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ap-southeast-2
 
-      - name: Login to ECR
-        id: login-ecr
+      - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, tag, push
+      - name: Build, tag, and push Docker image to ECR
+        env:
+          ECR_REGISTRY: 651706750291.dkr.ecr.ap-southeast-2.amazonaws.com
+          ECR_REPOSITORY: ecoenglish
         run: |
-          IMAGE_URI="${{ steps.login-ecr.outputs.registry }}/podcast-lambda:$(git rev-parse --short HEAD)"
-          docker build -t "$IMAGE_URI" .
+          IMAGE_URI="$ECR_REGISTRY/$ECR_REPOSITORY:latest"
+          docker build --platform linux/amd64 -t "$IMAGE_URI" .
           docker push "$IMAGE_URI"
-          echo "image=$IMAGE_URI" >> $GITHUB_ENV
+          echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
 
-      - name: Update Lambda
+      - name: Update Lambda function with new image
         run: |
           aws lambda update-function-code \
-            --function-name english-learning-podcast \
-            --image-uri ${{ env.image }}
+            --function-name ecoenglish \
+            --image-uri $IMAGE_URI
