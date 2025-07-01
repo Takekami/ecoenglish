@@ -102,9 +102,7 @@ def handler(event=None, context=None):
             episode_link = upload_episode_to_podbean(
                 title=post_title,
                 mp3_url=audio_url,
-                description=f"今日のニュース：{title}",
-                client_id=PODBEAN_ID,
-                client_secret=PODBEAN_SECRET,
+                description=f"今日のニュース：{title}"
             )
             if not episode_link:
                 raise RuntimeError("Podbean upload failed")
