@@ -19,12 +19,12 @@ OPENAI_API_KEY   = os.getenv("OPENAI_API_KEY")
 S3_BUCKET        = os.getenv("S3_BUCKET_NAME")
 WP_URL           = os.getenv("WP_URL")
 WP_USER          = os.getenv("WP_USER")
-WP_PASSWORD      = os.getenv("WP_PASSWORD")
+WP_APP_PASS      = os.getenv("WP_APP_PASS")
 PODBEAN_ID       = os.getenv("PODBEAN_CLIENT_ID")
 PODBEAN_SECRET   = os.getenv("PODBEAN_CLIENT_SECRET")
 
 # 必須変数が欠けていれば Lambda を起動しない
-REQUIRED_VARS = [OPENAI_API_KEY, S3_BUCKET, WP_URL, WP_USER, WP_PASSWORD, PODBEAN_ID, PODBEAN_SECRET]
+REQUIRED_VARS = [OPENAI_API_KEY, S3_BUCKET, WP_URL, WP_USER, WP_APP_PASS, PODBEAN_ID, PODBEAN_SECRET]
 if not all(REQUIRED_VARS):
     raise RuntimeError("One or more required environment variables are missing")
 
