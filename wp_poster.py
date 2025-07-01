@@ -1,35 +1,33 @@
 # utils/wp_poster.py
-import requests
-import os
-import base64
+import os, base64, requests
 
-def post_to_wordpress(title, content_html, categories=None, tags=None):
-    WP_URL = os.getenv("WP_URL")
-    WP_USER = os.getenv("WP_USER")
-    WP_APP_PASS = os.getenv("WP_APP_PASS")
+WP_URL  = os.getenv("WP_URL")
+WP_USER = os.getenv("WP_USER")
+WP_APP_PASS = os.getenv("WP_APP_PASS")
 
-    auth_str = f"{WP_USER}:{WP_APP_PASS}"
-    auth_header = base64.b64encode(auth_str.encode()).decode()
-    headers = {
-        "Authorization": f"Basic {auth_header}",
-        "Content-Type": "application/json"
-    }
+token = base64.b64encode(f"{WP_USER}:{WP_APP_PASS}".encode()).decode()
+HEADERS = {
+    "Authorization": f"Basic {token}",
+    "Content-Type": "application/json"
+}
 
+def post_to_wordpress(title, html, categories=None, tags=None):
     payload = {
         "title": title,
-        "content": content_html,
+        "content": html,
         "status": "publish"
     }
     if categories:
-        payload["categories"] = categories  # ID list
+        payload["categories"] = categories
     if tags:
-        payload["tags"] = tags  # ID list
+        payload["tags"] = tags
 
-    response = requests.post(WP_URL, headers=headers, json=payload)
+    r = requests.post(WP_URL, headers=HEADERS, json=payload, timeout=20)
 
-    if response.status_code == 201:
-        print("✅ WordPress post successful:", response.json().get("link"))
-        return response.json().get("link")
+    if r.status_code == 201:
+        link = r.json().get("link")
+        print("✅ WordPress post OK:", link)
+        return link
     else:
-        print("❌ WordPress post failed:", response.status_code, response.text)
+        print("❌ WordPress post failed:", r.status_code, r.text[:300])
         return None
