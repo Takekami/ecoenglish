@@ -41,7 +41,6 @@ def upload_to_s3(file_path, bucket_name, folder="audio"):
             file_path,
             bucket_name,
             s3_key,
-            ExtraArgs={"ContentType": "audio/mpeg"}
         )
     except ClientError as e:
         print("S3 upload failed:", e)
