@@ -1,57 +1,41 @@
-# utils/blog_template.py
-def build_blog_post_html(content, audio_url, level):
-    # Extract content sections
-    sections = {}
-    current = None
-    for line in content.splitlines():
-        if line.startswith("### "):
-            current = line.replace("### ", "").strip()
-            sections[current] = []
-        elif current:
-            sections[current].append(line)
+from html import escape
 
-    def section_html(title, body):
-        return f"""
-<h2>{title}</h2>
-<p>{'<br>'.join(body)}</p>
+def build_blog_post_html(level, headline, source_url,
+                         script, listen_q, read_q, grammar, audio_url):
+    def details_block(title, body_md):
+        body = "<br>".join(map(escape, body_md.splitlines()))
+        return f"<details><summary>{title}</summary><div>{body}</div></details>"
+
+    # 質問は “正答なし” バージョンを本文に入れ、
+    # 別途 Answers セクションで折りたたむ
+    lq_no_ans = "\n".join(
+        line for line in listen_q.splitlines() if not line.strip().startswith("–")
+    )
+    rq_no_ans = "\n".join(
+        line for line in read_q.splitlines() if not line.strip().startswith("–")
+    )
+
+    answer_block = details_block("解答と解説 (クリックで表示)", listen_q + "\n" + read_q)
+
+    html = f"""
+<h2>🎧 Audio</h2>
+<audio controls src="{audio_url}"></audio>
+
+<h2>📖 Script</h2>
+<pre>{escape(script)}</pre>
+
+<h2>◇ Listening Questions （リスニング問題）</h2>
+<pre>{escape(lq_no_ans)}</pre>
+
+<h2>◇ Reading Questions （読解問題）</h2>
+<pre>{escape(rq_no_ans)}</pre>
+
+{answer_block}
+
+<h2>✏️ Grammar Point</h2>
+<pre>{escape(grammar)}</pre>
+
+<hr>
+<p>Source: <a href="{source_url}" target="_blank" rel="noopener noreferrer">{headline}</a></p>
 """
-
-    def qa_accordion(title, questions):
-        html = f"<h3>{title}</h3>\n"
-        for i, q in enumerate(questions):
-            html += f"""
-<details>
-<summary>Q{i+1}</summary>
-<p>{q}</p>
-</details>
-"""
-        return html
-
-    html_parts = []
-
-    # Title and audio
-    html_parts.append(f"<h1>{level} 英語ニュース教材</h1>")
-    html_parts.append(f"<audio controls><source src=\"{audio_url}\" type=\"audio/mpeg\"></audio>")
-
-    # Script
-    html_parts.append(section_html("Script（スクリプト）", sections.get("Script", [])))
-    
-    # Vocabulary
-    html_parts.append(section_html("Vocabulary（単語解説）", sections.get("Vocabulary Notes", [])))
-
-    # Grammar
-    html_parts.append(section_html("Grammar Point（文法ポイント）", sections.get("Grammar Focus", [])))
-
-    # Listening Questions
-    html_parts.append(section_html("Listening Questions（リスニング問題）", sections.get("Listening Questions", [])))
-
-    # Reading Questions
-    html_parts.append(section_html("Reading Questions（読解問題）", sections.get("Reading Comprehension Questions", [])))
-
-    # Answer Key（折りたたみ）
-    html_parts.append(qa_accordion("解答と解説（クリックで表示）", sections.get("Answer Key", [])))
-
-    # Japanese Explanation
-    html_parts.append(section_html("日本語での経済ニュース解説", sections.get("Japanese Explanation", [])))
-
-    return "\n".join(html_parts)
+    return html

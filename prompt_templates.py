@@ -1,38 +1,41 @@
-# utils/prompt_templates.py
 def get_prompt_for_level(level, title, summary, url):
     return f"""
-You are an English education content generator. Your task is to create learning material for {level} learners using a current economic news article.
+### ROLE
+You are an ELT writer creating CEFR-{level} materials.
 
----
-Title: {title}
-Summary: {summary}
-Original URL: {url}
----
+### TASK
+1. Read the news headline & summary.  
+2. Decide if the topic is **“economically / socially significant”** (yes / no).  
+   *Say “no” for celebrity gossip etc.*  
+3. If **no**, reply exactly: `SKIP`  
+4. If **yes**, rewrite the summary into a {level} learner-friendly **SCRIPT**  
+   (130–160 words B1+, 180–220 words B2).  
+5. Add 3 **Listening Questions** (MCQ or T/F) *without answers*.  
+6. Add 3 **Reading Comprehension Questions** *without answers*.  
+7. Identify one **grammar point** that appears in the SCRIPT and is appropriate  
+   to {level}. Give a one-sentence explanation **and quote the sentence**.
 
-Please generate the following structured content based on the article:
-
+### OUTPUT FORMAT
+```md
 ### Script
-Rewrite or summarize the article into approximately 400 words of spoken English suitable for a CEFR {level} learner. Keep the vocabulary and grammar within the target level. Use clear and concise language. Avoid long, complex sentences. Keep the tone informative yet conversational.
-
-### Vocabulary Notes
-List 5–10 keywords or phrases with short, simple English explanations. Format:
-- word: explanation
-
-### Grammar Focus
-Pick one grammar structure or phrase used in the script and briefly explain it (within {level} level understanding).
+...
 
 ### Listening Questions
-1 True/False question based on the script content
-2 Multiple Choice Questions (with 3 options each)
+1.
+2.
+3.
 
-### Reading Comprehension Questions
-1 Detail question (What/Who/When...)
-1 Inference question (Why/What do you think...)
-1 Vocabulary question (meaning of a word in context)
+### Reading Questions
+1.
+2.
+3.
 
-### Answer Key
-Provide brief answers to each question. Include a short explanation.
+### Grammar Point
+**<Name of structure>** – “<quoted sentence>”
+```
 
-### Japanese Explanation
-Write a short explanation in Japanese (3–5 sentences) summarizing the main point of the news and why it's economically relevant.
+### INPUT  
+Headline: {title}  
+Summary: {summary}  
+URL: {url}
 """
