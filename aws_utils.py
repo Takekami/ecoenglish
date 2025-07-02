@@ -1,13 +1,21 @@
-# utils/aws_utils.py
-import os
-import uuid
-import requests
+# aws_utils.py
+import os, uuid, mimetypes, requests, boto3
 from pathlib import Path
+from botocore.exceptions import ClientError
 
+# ---------- OpenAI ----------
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise RuntimeError("OPENAI_API_KEY is missing")
+
 OPENAI_TTS_ENDPOINT = "https://api.openai.com/v1/audio/speech"
 
-def synthesize_speech(text, filename, voice="shimmer", model="tts-1"):
+# ---------- AWS ----------
+s3 = boto3.client("s3")
+
+# ---------- TTS ----------
+def synthesize_speech(text: str, filename: str,
+                      voice: str = "shimmer", model: str = "tts-1") -> str:
     headers = {
         "Authorization": f"Bearer {OPENAI_API_KEY}",
         "Content-Type": "application/json"
@@ -18,33 +26,25 @@ def synthesize_speech(text, filename, voice="shimmer", model="tts-1"):
         "voice": voice,
         "response_format": "mp3"
     }
+    res = requests.post(OPENAI_TTS_ENDPOINT, headers=headers, json=data, timeout=60)
+    if res.status_code != 200:
+        raise RuntimeError(f"TTS failed {res.status_code}: {res.text}")
 
-    response = requests.post(OPENAI_TTS_ENDPOINT, headers=headers, json=data)
-    if response.status_code != 200:
-        raise Exception(f"TTS failed: {response.status_code} - {response.text}")
+    out_path = Path("/tmp") / filename
+    out_path.write_bytes(res.content)
+    return str(out_path)
 
-    audio_path = f"/tmp/{filename}"
-    with open(audio_path, "wb") as f:
-        f.write(response.content)
+# ---------- S3 ----------
+def upload_to_s3(local_path: str, bucket: str, folder: str | None = None,
+                 expires: int = 60 * 60 * 24 * 7) -> str:
+    key = f"{folder.rstrip('/')}/{Path(local_path).name}" if folder else Path(local_path).name
+    content_type = mimetypes.guess_type(local_path)[0] or "application/octet-stream"
 
-    return audio_path
+    s3.upload_file(local_path, bucket, key, ExtraArgs={"ContentType": content_type})
 
-import boto3
-from botocore.exceptions import ClientError
-
-s3 = boto3.client("s3")
-
-def upload_to_s3(file_path, bucket_name, folder="audio"):
-    s3_key = f"{folder}/{uuid.uuid4().hex}_{Path(file_path).name}"
-    try:
-        s3.upload_file(
-            file_path,
-            bucket_name,
-            s3_key,
-        )
-    except ClientError as e:
-        print("S3 upload failed:", e)
-        return None
-
-    s3_url = f"https://{bucket_name}.s3.amazonaws.com/{s3_key}"
-    return s3_url
+    # presigned URL
+    return s3.generate_presigned_url(
+        "get_object",
+        Params={"Bucket": bucket, "Key": key},
+        ExpiresIn=expires
+    )

@@ -79,11 +79,12 @@ def get_candidate_entry():
 
 def _extract_section(md: str, header: str) -> str:
     try:
-        start = md.index(f"### {header}") + len(f"### {header}")
-        end = md.index("###", start)
+        anchor = f"### {header}"
+        start  = md.index(anchor) + len(anchor)
+        end    = md.index("###", start)
     except ValueError:
         end = len(md)
-    return md[start:].strip() if start < end else md[start:end].strip()
+    return md[start:end].lstrip().rstrip()
 
 # ---------- Lambda ハンドラ ----------
 def handler(event=None, context=None):
@@ -99,8 +100,13 @@ def handler(event=None, context=None):
         # ---- B1+ / B2 を両方処理 ----
         for level in LEVELS:
             gpt_md = generate_content(level, title, summary, url)
+            if gpt_md.strip().startswith("SKIP"):
+                print(f"{level} skipped by GPT")
+                continue    
 
             script = _extract_section(gpt_md, "Script")
+            if not script:
+                raise RuntimeError("Empty script")
             lq     = _extract_section(gpt_md, "Listening Questions")
             rq     = _extract_section(gpt_md, "Reading Questions")
             gp     = _extract_section(gpt_md, "Grammar Point")
@@ -112,7 +118,8 @@ def handler(event=None, context=None):
             if not post_to_wordpress(f"{level} 英語ニュース教材：{title}", html):
                 raise RuntimeError("WordPress post failed")
 
-            if not upload_episode_to_podbean(f"{level}: {title}", audio_url, summary):
+            media_url = audio_url  # 署名付き
+            if not upload_episode_to_podbean(f"{level}: {title}", media_url, summary):
                 raise RuntimeError("Podbean upload failed")
 
             episode_list.append({
@@ -125,8 +132,8 @@ def handler(event=None, context=None):
         # ---- RSS を 1 度だけ生成して S3 へ ----
         rss_xml = generate_rss(
             feed_title   = "英語で学ぶ経済ニュース",
-            site_url     = "https://yourdomain.com",
-            author       = "Takeyuki Murakami",
+            site_url     = "https://econenglish.jp/",
+            author       = "Summary Samurai",
             description  = "毎朝届く、英語で学ぶ最新の経済ニュース。CEFR B1+ / B2対応。",
             episode_list = episode_list,
         )
