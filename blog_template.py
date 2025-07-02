@@ -1,28 +1,36 @@
 from markdown import markdown
 
-def build_blog_post_html(level, title, url, script, lq, rq, gp, audio_url):
+def build_blog_post_html(level,title,url,script,vocab,lq,rq,ans,gp,jp,audio_url):
     md = f"""
 ## 🎧 Audio
-<audio controls src="{audio_url}"></audio>
+<audio controls src=\"{audio_url}\"></audio>
 
 ## 📖 Script
 {script}
 
-<details><summary>Listening Questions</summary>
+## 📝 Vocabulary
+{vocab}
 
+## ❓ Listening Questions
 {lq}
-</details>
 
-<details><summary>Reading Questions</summary>
-
+## 📚 Reading Questions
 {rq}
-</details>
 
-## Grammar Point
+<details><summary>解答と解説（クリックで表示）</summary>
+
+### Answers
+{ans}
+
+### Grammar Point
 {gp}
 
----
+### 日本語での経済ニュース解説
+{jp}
 
+</details>
+
+---
 Source: [{url}]({url})
 """
     return markdown(md, extensions=["extra"])

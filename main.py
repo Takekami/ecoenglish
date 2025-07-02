@@ -1,11 +1,6 @@
-# main.py
-import datetime
-import os
-import random
+import datetime, os, random
 from pathlib import Path
-
-import feedparser
-import openai
+import feedparser, openai
 
 from aws_utils import synthesize_speech, upload_to_s3
 from blog_template import build_blog_post_html
@@ -23,19 +18,13 @@ WP_APP_PASS     = os.getenv("WP_APP_PASS")
 PODBEAN_ID      = os.getenv("PODBEAN_CLIENT_ID")
 PODBEAN_SECRET  = os.getenv("PODBEAN_CLIENT_SECRET")
 
-REQUIRED_VARS = [
-    OPENAI_API_KEY, S3_BUCKET,
-    WP_URL, WP_USER, WP_APP_PASS,
-    PODBEAN_ID, PODBEAN_SECRET
-]
-if not all(REQUIRED_VARS):
-    raise RuntimeError("One or more required environment variables are missing")
+REQ = [OPENAI_API_KEY, S3_BUCKET, WP_URL, WP_USER, WP_APP_PASS, PODBEAN_ID, PODBEAN_SECRET]
+if not all(REQ):
+    raise RuntimeError("Missing required env vars")
 
-# ---------- OpenAI ----------
 openai.api_key = OPENAI_API_KEY
 client = openai.Client(api_key=OPENAI_API_KEY)
 
-# ---------- 定数 ----------
 RSS_FEEDS = [
     "https://feeds.bbci.co.uk/news/business/rss.xml",
     "https://feeds.npr.org/1006/rss.xml",
@@ -46,103 +35,74 @@ MAX_TRIES = 5
 LEVELS = ["B1+", "B2"]
 
 # ---------- ヘルパ ----------
+
 def select_feed():
     return RSS_FEEDS[datetime.date.today().toordinal() % len(RSS_FEEDS)]
 
-def fetch_article(feed_url):
-    feed = feedparser.parse(feed_url)
+def fetch_article(url):
+    feed = feedparser.parse(url)
     entries = [e for e in feed.entries if "summary" in e]
     return random.choice(entries) if entries else None
 
-def generate_content(level, title, summary, url):
-    prompt = get_prompt_for_level(level, title, summary, url)
-    res = client.chat.completions.create(
+def gpt(level, title, summary, link):
+    prompt = get_prompt_for_level(level, title, summary, link)
+    r = client.chat.completions.create(
         model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a skilled English learning content creator."},
-            {"role": "user", "content": prompt}
-        ],
+        messages=[{"role":"user","content": prompt}],
         temperature=0.7,
     )
-    return res.choices[0].message.content
+    return r.choices[0].message.content.strip()
 
-def get_candidate_entry():
-    """重要度 yes の記事が出るまで最大 MAX_TRIES 試行"""
-    for _ in range(MAX_TRIES):
-        entry = fetch_article(select_feed())
-        if not entry:
-            continue
-        judge = generate_content("B1+", entry.title, entry.summary, entry.link)
-        if not judge.startswith("SKIP"):
-            return entry
-    return None
+def extract(md: str, header: str):
+    tag = f"### {header}"
+    if tag not in md:
+        return ""
+    start = md.index(tag)+len(tag)
+    nxt = md.find("###", start)
+    body = md[start:nxt if nxt>-1 else None].strip()
+    return body
 
-def _extract_section(md: str, header: str) -> str:
-    try:
-        anchor = f"### {header}"
-        start  = md.index(anchor) + len(anchor)
-        end    = md.index("###", start)
-    except ValueError:
-        end = len(md)
-    return md[start:end].lstrip().rstrip()
+# ---------- Lambda ----------
 
-# ---------- Lambda ハンドラ ----------
 def handler(event=None, context=None):
-    try:
-        entry = get_candidate_entry()
-        if not entry:
-            return {"statusCode": 500, "body": "No suitable article found"}
+    art = None
+    for _ in range(MAX_TRIES):
+        e = fetch_article(select_feed())
+        if not e:
+            continue
+        if not gpt("B1+", e.title, e.summary, e.link).startswith("SKIP"):
+            art = e
+            break
+    if not art:
+        return {"statusCode":500,"body":"No suitable article"}
 
-        title, summary, url = entry.title, entry.summary, entry.link
-        today = datetime.date.today()
-        episode_list = []
+    title, summary, link = art.title, art.summary, art.link
+    today = datetime.date.today()
+    episodes = []
 
-        # ---- B1+ / B2 を両方処理 ----
-        for level in LEVELS:
-            gpt_md = generate_content(level, title, summary, url)
-            if gpt_md.strip().startswith("SKIP"):
-                print(f"{level} skipped by GPT")
-                continue    
+    for lvl in LEVELS:
+        md = gpt(lvl, title, summary, link)
+        if md.startswith("SKIP"):
+            continue
 
-            script = _extract_section(gpt_md, "Script")
-            if not script:
-                raise RuntimeError("Empty script")
-            lq     = _extract_section(gpt_md, "Listening Questions")
-            rq     = _extract_section(gpt_md, "Reading Questions")
-            gp     = _extract_section(gpt_md, "Grammar Point")
+        script = extract(md, "Script")
+        vocab  = extract(md, "Vocabulary")
+        lq     = extract(md, "Listening Questions")
+        rq     = extract(md, "Reading Questions")
+        ans    = extract(md, "Answers")
+        gp     = extract(md, "Grammar Point")
+        jp     = extract(md, "日本語での経済ニュース解説")
 
-            mp3_path  = synthesize_speech(script, f"{level}_{today}.mp3")
-            audio_url = upload_to_s3(mp3_path, S3_BUCKET)
+        mp3    = synthesize_speech(script, f"{lvl}_{today}.mp3")
+        audio  = upload_to_s3(mp3, S3_BUCKET)
 
-            html = build_blog_post_html(level, title, url, script, lq, rq, gp, audio_url)
-            if not post_to_wordpress(f"{level} 英語ニュース教材：{title}", html):
-                raise RuntimeError("WordPress post failed")
+        html   = build_blog_post_html(lvl, title, link, script, vocab, lq, rq, ans, gp, jp, audio)
+        post_to_wordpress(f"{lvl} 英語ニュース教材：{title}", html)
 
-            media_url = audio_url  # 署名付き
-            if not upload_episode_to_podbean(f"{level}: {title}", media_url, summary):
-                raise RuntimeError("Podbean upload failed")
+        ep_url = upload_episode_to_podbean(f"{lvl}: {title}", audio, summary)
+        episodes.append({"title":f"{lvl}: {title}","description":summary,"mp3_url":audio,"pub_date":datetime.datetime.utcnow()})
 
-            episode_list.append({
-                "title": f"{level}: {title}",
-                "description": summary,
-                "mp3_url": audio_url,
-                "pub_date": datetime.datetime.utcnow(),
-            })
-
-        # ---- RSS を 1 度だけ生成して S3 へ ----
-        rss_xml = generate_rss(
-            feed_title   = "英語で学ぶ経済ニュース",
-            site_url     = "https://econenglish.jp/",
-            author       = "Summary Samurai",
-            description  = "毎朝届く、英語で学ぶ最新の経済ニュース。CEFR B1+ / B2対応。",
-            episode_list = episode_list,
-        )
-        tmp = Path("/tmp/rss.xml")
-        save_rss(rss_xml, path=tmp)
-        upload_to_s3(tmp, S3_BUCKET, folder="rss")
-
-        return {"statusCode": 200, "body": "Podcast & blog posted successfully."}
-
-    except Exception as e:
-        print("Error occurred:", e)
-        return {"statusCode": 500, "body": f"Error: {e}"}
+    rss = generate_rss("英語で学ぶ経済ニュース","https://econenglish.jp/","Summary Samurai",
+                       "最新の経済ニュースを英語で学ぶ。",episodes)
+    tmp = Path("/tmp/rss.xml"); save_rss(rss, tmp); upload_to_s3(tmp, S3_BUCKET, "rss")
+    return {"statusCode":200,"body":"Done"}
