@@ -32,7 +32,6 @@ RSS_FEEDS = [
     "https://www.abc.net.au/news/feed/51892/rss.xml",
 ]
 MAX_TRIES = 5
-LEVELS = ["B1+", "B2"]
 
 # ---------- ヘルパ ----------
 
@@ -78,31 +77,33 @@ def handler(event=None, context=None):
 
     title, summary, link = art.title, art.summary, art.link
     today = datetime.date.today()
-    episodes = []
 
-    for lvl in LEVELS:
-        md = gpt(lvl, title, summary, link)
-        if md.startswith("SKIP"):
-            continue
+    level = "B1–C1"
+    md = gpt("B1+", title, summary, link)
+    if md.startswith("SKIP"):
+        return {"statusCode":204,"body":"Article skipped"}
 
-        script = extract(md, "Script")
-        vocab  = extract(md, "Vocabulary")
-        lq     = extract(md, "Listening Questions")
-        rq     = extract(md, "Reading Questions")
-        ans    = extract(md, "Answers")
-        gp     = extract(md, "Grammar Point")
-        jp     = extract(md, "日本語での経済ニュース解説")
+    script = extract(md, "Script")
+    vocab  = extract(md, "Vocabulary")
+    lq     = extract(md, "Listening Questions")
+    rq     = extract(md, "Reading Questions")
+    ans    = extract(md, "Answers")
+    gp     = extract(md, "Grammar Point")
+    jp     = extract(md, "日本語での経済ニュース解説")
 
-        mp3    = synthesize_speech(script, f"{lvl}_{today}.mp3")
-        audio  = upload_to_s3(mp3, S3_BUCKET)
+    mp3    = synthesize_speech(script, f"{today}.mp3")
+    audio  = upload_to_s3(mp3, S3_BUCKET)
 
-        html   = build_blog_post_html(lvl, title, link, script, vocab, lq, rq, ans, gp, jp, audio)
-        post_to_wordpress(f"{lvl} 英語ニュース教材：{title}", html)
+    html   = build_blog_post_html(level, title, link, script, vocab, lq, rq, ans, gp, jp, audio)
+    post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
 
-        ep_url = upload_episode_to_podbean(f"{lvl}: {title}", audio, summary)
-        episodes.append({"title":f"{lvl}: {title}","description":summary,"mp3_url":audio,"pub_date":datetime.datetime.utcnow()})
-
-    rss = generate_rss("英語で学ぶ経済ニュース","https://econenglish.jp/","Summary Samurai",
-                       "最新の経済ニュースを英語で学ぶ。",episodes)
+    ep_url = upload_episode_to_podbean(f"{title}（B1–C1対応）", audio, summary)
+    rss = generate_rss(
+        "英語で学ぶ経済ニュース",
+        "https://econenglish.jp/",
+        "Summary Samurai",
+        "最新の経済ニュースを英語で学ぶ。",
+        [{"title": f"{title}（B1–C1対応）", "description": summary, "mp3_url": audio, "pub_date": datetime.datetime.utcnow()}]
+    )
     tmp = Path("/tmp/rss.xml"); save_rss(rss, tmp); upload_to_s3(tmp, S3_BUCKET, "rss")
     return {"statusCode":200,"body":"Done"}
