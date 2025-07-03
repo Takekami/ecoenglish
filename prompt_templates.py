@@ -56,4 +56,3 @@ Headline: {title}
 Summary: {summary}  
 URL: {url}
 """
-```
