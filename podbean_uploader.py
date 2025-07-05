@@ -1,43 +1,81 @@
-import os, requests
+import requests
+from pathlib import Path
 from typing import Optional
 
-CLIENT_ID     = os.getenv("PODBEAN_CLIENT_ID")
-CLIENT_SECRET = os.getenv("PODBEAN_CLIENT_SECRET")
+# Podbean API endpoints
+token_url = "https://api.podbean.com/v1/oauth/token"
+media_upload_url = "https://api.podbean.com/v1/media"
+episode_publish_url = "https://api.podbean.com/v1/episodes"
 
-TOKEN_URL   = "https://api.podbean.com/v1/oauth/token"
-EPISODE_URL = "https://api.podbean.com/v1/episodes"
-MAX_DESC    = 500      # free plan 上限
+# Client credentials (assumed to be set elsewhere securely)
+CLIENT_ID = "YOUR_CLIENT_ID"
+CLIENT_SECRET = "YOUR_CLIENT_SECRET"
 
-def _get_token() -> str:
-    r = requests.post(
-        TOKEN_URL,
-        data={
-            "grant_type": "client_credentials",
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "scope": "episode_publish",
-        },
-        timeout=15,
-    )
-    r.raise_for_status()
-    return r.json()["access_token"]
 
-def _trim(txt: str, limit: int = MAX_DESC) -> str:
-    flat = " ".join(txt.split())
-    return (flat[: limit - 1] + "…") if len(flat) >= limit else flat
+def _get_token(scope: str) -> str:
+    """
+    Obtain an OAuth2 access token for the given scope.
+    """
+    data = {
+        "grant_type": "client_credentials",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "scope": scope,
+    }
+    resp = requests.post(token_url, data=data, timeout=15)
+    resp.raise_for_status()
+    return resp.json()["access_token"]
 
-def upload_episode_to_podbean(title: str, media_url: str, description: str) -> Optional[str]:
-    token = _get_token()
+
+def upload_media_file(local_path: str) -> str:
+    """
+    Upload the local audio file to Podbean storage and return media_id.
+    """
+    token = _get_token(scope="media_upload")
+    headers = {"Authorization": f"Bearer {token}"}
+    with open(local_path, "rb") as f:
+        files = {"media": (Path(local_path).name, f, "audio/mpeg")}
+        resp = requests.post(media_upload_url, headers=headers, files=files, timeout=60)
+    resp.raise_for_status()
+    media_id = resp.json().get("media_id")
+    if not media_id:
+        raise RuntimeError(f"Podbean media upload failed: {resp.text}")
+    return media_id
+
+
+def upload_episode_to_podbean(
+    title: str,
+    local_audio_path: str,
+    description: str
+) -> Optional[str]:
+    """
+    Uploads audio to Podbean and publishes an episode using the returned media_id.
+    Returns the episode link on success, or None on failure.
+    """
+    # 1) Upload media file
+    media_id = upload_media_file(local_audio_path)
+
+    # 2) Publish episode
+    token = _get_token(scope="episode_publish")
+    headers = {"Authorization": f"Bearer {token}"}
     payload = {
         "title": title,
-        "media_url": media_url,   # presigned S3 URL
+        "media_id": media_id,
         "type": "public",
-        "content": _trim(description),
+        "content": description[:10000],  # trim if needed
     }
-    r = requests.post(EPISODE_URL, headers={"Authorization": f"Bearer {token}"}, data=payload, timeout=30)
-    if r.ok:
-        link = r.json().get("link")
-        print("✅ Podbean episode OK:", link)
-        return link
-    print("Podbean upload failed:", r.text)
-    return None
+    resp = requests.post(episode_publish_url, headers=headers, data=payload, timeout=30)
+    resp.raise_for_status()
+
+    return resp.json().get("link")
+
+
+if __name__ == "__main__":
+    # Example usage:
+    mp3_path = "./output/news_episode.mp3"
+    ep_link = upload_episode_to_podbean(
+        "今日の経済ニュース（B1–B2レベル）",
+        mp3_path,
+        "英語レベル別リスニング教材のエピソード"
+    )
+    print(f"Episode published: {ep_link}")
