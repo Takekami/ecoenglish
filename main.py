@@ -111,11 +111,13 @@ def handler(event=None, context=None):
     post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
 
     # 4) Podbean (直接アップロード) ----------------------------------------
-    ep_link = upload_episode_to_podbean(
+    episode_link = upload_episode_to_podbean(
         f"{title}（B1–C1対応）",
-        mp3_path,               # <- ローカル音声ファイル
-        summary,
+        audio_url,          # presigned URL
+        summary             # <= 500 文字に自動トリムされる
     )
+    if not episode_link:
+        raise RuntimeError("Podbean upload failed")
 
     # 5) RSS 生成 & S3 -----------------------------------------------------
     rss_xml = generate_rss(
