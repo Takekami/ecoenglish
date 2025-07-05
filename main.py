@@ -113,8 +113,8 @@ def handler(event=None, context=None):
     # 4) Podbean (直接アップロード) ----------------------------------------
     episode_link = upload_episode_to_podbean(
         f"{title}（B1–C1対応）",
-        audio_url,          # presigned URL
-        summary             # <= 500 文字に自動トリムされる
+        mp3_path,           # ← ローカルファイルパス(mp3_path)を渡す
+        summary
     )
     if not episode_link:
         raise RuntimeError("Podbean upload failed")

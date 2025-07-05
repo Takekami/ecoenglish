@@ -8,8 +8,8 @@ media_upload_url = "https://api.podbean.com/v1/media"
 episode_publish_url = "https://api.podbean.com/v1/episodes"
 
 # Client credentials (assumed to be set elsewhere securely)
-CLIENT_ID = "YOUR_CLIENT_ID"
-CLIENT_SECRET = "YOUR_CLIENT_SECRET"
+CLIENT_ID = "PODBEAN_CLIENT_ID"
+CLIENT_SECRET = "PODBEAN_CLIENT_SECRET"
 
 
 def _get_token(scope: str) -> str:
@@ -68,14 +68,3 @@ def upload_episode_to_podbean(
     resp.raise_for_status()
 
     return resp.json().get("link")
-
-
-if __name__ == "__main__":
-    # Example usage:
-    mp3_path = "./output/news_episode.mp3"
-    ep_link = upload_episode_to_podbean(
-        "今日の経済ニュース（B1–B2レベル）",
-        mp3_path,
-        "英語レベル別リスニング教材のエピソード"
-    )
-    print(f"Episode published: {ep_link}")
