@@ -1,6 +1,8 @@
 import requests
+import os
 from pathlib import Path
 from typing import Optional
+from requests.exceptions import HTTPError
 
 # Podbean API endpoints
 token_url = "https://api.podbean.com/v1/oauth/token"
@@ -8,22 +10,24 @@ media_upload_url = "https://api.podbean.com/v1/media"
 episode_publish_url = "https://api.podbean.com/v1/episodes"
 
 # Client credentials (assumed to be set elsewhere securely)
-CLIENT_ID = "PODBEAN_CLIENT_ID"
-CLIENT_SECRET = "PODBEAN_CLIENT_SECRET"
+CLIENT_ID     = os.environ["PODBEAN_CLIENT_ID"]
+CLIENT_SECRET = os.environ["PODBEAN_CLIENT_SECRET"]
 
 
 def _get_token(scope: str) -> str:
-    """
-    Obtain an OAuth2 access token for the given scope.
-    """
     data = {
-        "grant_type": "client_credentials",
-        "client_id": CLIENT_ID,
+        "grant_type":    "client_credentials",
+        "client_id":     CLIENT_ID,
         "client_secret": CLIENT_SECRET,
-        "scope": scope,
+        "scope":         scope,
     }
     resp = requests.post(token_url, data=data, timeout=15)
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except HTTPError:
+        # ここで中身を出力して 400 の理由を確認
+        print("Podbean token fetch failed:", resp.status_code, resp.text)
+        raise
     return resp.json()["access_token"]
 
 
@@ -31,7 +35,7 @@ def upload_media_file(local_path: str) -> str:
     """
     Upload the local audio file to Podbean storage and return media_id.
     """
-    token = _get_token(scope="media_upload")
+    token = _get_token(scope="media_upload episode_publish")
     headers = {"Authorization": f"Bearer {token}"}
     with open(local_path, "rb") as f:
         files = {"media": (Path(local_path).name, f, "audio/mpeg")}
