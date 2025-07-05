@@ -1,6 +1,8 @@
 import os, mimetypes, requests
 from pathlib import Path
 import boto3
+import requests
+from requests.exceptions import HTTPError
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OPENAI_TTS_ENDPOINT = "https://api.openai.com/v1/audio/speech"
@@ -8,10 +10,22 @@ OPENAI_TTS_ENDPOINT = "https://api.openai.com/v1/audio/speech"
 auth = {"Authorization": f"Bearer {OPENAI_API_KEY}", "Content-Type":"application/json"}
 _s3 = boto3.client("s3")
 
-def synthesize_speech(text, filename, voice="shimmer", model="tts-1"):
-    data = {"model": model, "input": text, "voice": voice, "response_format": "mp3"}
-    r = requests.post(OPENAI_TTS_ENDPOINT, headers=auth, json=data)
-    r.raise_for_status()
+def synthesize_speech(text, filename,
+                      voice="shimmer", model="tts-1"):
+    data = {
+        "model": model,
+        "input": text,
+        "voice": voice,
+        "response_format": "mp3"
+    }
+    r = requests.post(OPENAI_TTS_ENDPOINT,
+                      headers=auth, json=data)
+    try:
+        r.raise_for_status()
+    except HTTPError:
+        # ← ここでエラー理由を出力
+        print(f"[TTS ERROR] status={r.status_code}, body={r.text}")
+        raise
     path = f"/tmp/{filename}"
     Path(path).write_bytes(r.content)
     return path
