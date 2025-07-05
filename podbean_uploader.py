@@ -1,83 +1,66 @@
-import os
-import requests
+# podbean_uploader.py  ── 置き換え
+import os, requests, time
 from pathlib import Path
 from typing import Optional
 
-"""podbean_uploader.py – *direct upload* version
-------------------------------------------------
-1. 取得した MP3 ファイルを Podbean の一時ストレージに **multipart/form‑data** でアップロード
-2. 戻り値 `location` を `media_key` として `POST /v1/episodes`
+CID     = os.getenv("PODBEAN_CLIENT_ID")
+CSECRET = os.getenv("PODBEAN_CLIENT_SECRET")
 
-Free プランでも利用可 / ファイルサイズ上限 100 MB。
-"""
+TOKEN_URL       = "https://api.podbean.com/v1/oauth/token"
+UPLOADLINK_URL  = "https://api.podbean.com/v1/files/uploadLink"
+EPISODE_URL     = "https://api.podbean.com/v1/episodes"
 
-CLIENT_ID: str  = os.getenv("PODBEAN_CLIENT_ID", "")
-CLIENT_SECRET: str = os.getenv("PODBEAN_CLIENT_SECRET", "")
-
-TOKEN_URL   = "https://api.podbean.com/v1/oauth/token"
-UPLOAD_URL  = "https://api.podbean.com/v1/files/upload"
-EPISODE_URL = "https://api.podbean.com/v1/episodes"
-
-TIMEOUT = 60  # seconds
-MAX_DESC = 500  # free plan description limit
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-def _truncate(txt: str, limit: int = MAX_DESC) -> str:
-    """Trim description to Podbean free‑plan limit (500 chars)."""
-    txt = (txt or "").replace("\n", " ").strip()
-    return txt[: limit - 1] + "…" if len(txt) >= limit else txt
-
-
-def _get_access_token() -> str:
-    data = {
-        "grant_type": "client_credentials",
-        "client_id": CLIENT_ID,
-        "client_secret": CLIENT_SECRET,
-        "scope": "episode_publish",  # ← ファイルアップロード + 公開
-    }
-    r = requests.post(TOKEN_URL, data=data, timeout=TIMEOUT)
+def _token() -> str:
+    r = requests.post(
+        TOKEN_URL,
+        data={
+            "grant_type": "client_credentials",
+            "client_id": CID,
+            "client_secret": CSECRET,
+            "scope": "episode_publish",
+        },
+        timeout=30,
+    )
     r.raise_for_status()
     return r.json()["access_token"]
 
-
-def _upload_media(token: str, mp3_path: str) -> str:
-    """Upload the local mp3 to Podbean and return the media *location* string."""
-    headers = {"Authorization": f"Bearer {token}"}
+def _put_file(presigned_url: str, mp3_path: str) -> None:
     with open(mp3_path, "rb") as f:
-        files = {"file": (Path(mp3_path).name, f, "audio/mpeg")}
-        r = requests.post(UPLOAD_URL, headers=headers, files=files, timeout=TIMEOUT)
-    r.raise_for_status()
-    return r.json()["location"]
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
+        r = requests.put(presigned_url, data=f, headers={"Content-Type": "audio/mpeg"}, timeout=120)
+        r.raise_for_status()
 
 def upload_episode_to_podbean(title: str, mp3_path: str, description: str) -> Optional[str]:
-    """Upload *mp3_path* as a public episode and return the episode link (or None)."""
-    try:
-        token = _get_access_token()
-        media_key = _upload_media(token, mp3_path)
+    token = _token()
 
-        payload = {
-            "title": title,
-            "type": "public",
-            "media_key": media_key,
-            "content": _truncate(description),
-        }
-        headers = {"Authorization": f"Bearer {token}"}
-        r = requests.post(EPISODE_URL, data=payload, headers=headers, timeout=TIMEOUT)
-        if r.ok:
-            link = r.json().get("link")
-            print("✅ Podbean episode OK:", link)
-            return link
-        else:
-            print("Podbean upload failed:", r.text)
-            return None
+    # 1. presigned URL を取得
+    file_size = Path(mp3_path).stat().st_size
+    r = requests.post(
+        UPLOADLINK_URL,
+        headers={"Authorization": f"Bearer {token}"},
+        json={"filename": Path(mp3_path).name, "filesize": file_size},
+        timeout=30,
+    )
+    r.raise_for_status()
+    data = r.json()
+    presigned_url = data["presigned_url"]
+    file_key      = data["file_key"]          # episode 登録時に渡す id
 
-    except Exception as e:
-        print("Podbean upload failed:", e)
+    # 2. PUT でアップロード
+    _put_file(presigned_url, mp3_path)
+
+    # 3. エピソードとして公開
+    payload = {
+        "title"      : title,
+        "type"       : "public",
+        "content"    : (description[:499] + "…") if len(description) > 500 else description,
+        "file_key"   : file_key,
+        "status"     : "publish",
+    }
+    r = requests.post(EPISODE_URL, headers={"Authorization": f"Bearer {token}"}, data=payload, timeout=30)
+    if r.ok:
+        link = r.json().get("link", "")
+        print("✅ Podbean OK:", link)
+        return link
+    else:
+        print("Podbean upload failed:", r.text)
         return None
