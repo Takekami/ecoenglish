@@ -19,4 +19,8 @@ def synthesize_speech(text, filename, voice="shimmer", model="tts-1"):
 def upload_to_s3(local_path:str, bucket:str, folder:str|None=None):
     key = f"{folder}/{Path(local_path).name}" if folder else Path(local_path).name
     _s3.upload_file(local_path, bucket, key, ExtraArgs={"ContentType": mimetypes.guess_type(local_path)[0] or "application/octet-stream"})
-    return _s3.generate_presigned_url("get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=60*60*24*7)
+    return _s3.generate_presigned_url(
+    "get_object",
+    Params={"Bucket": bucket, "Key": key},
+    ExpiresIn=60*60*6
+)
