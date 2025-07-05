@@ -1,4 +1,6 @@
+# podbean_uploader.py
 import os, requests
+from typing import Optional
 
 CLIENT_ID     = os.getenv("PODBEAN_CLIENT_ID")
 CLIENT_SECRET = os.getenv("PODBEAN_CLIENT_SECRET")
@@ -17,24 +19,31 @@ def _get_access_token() -> str:
     r.raise_for_status()
     return r.json()["access_token"]
 
-def upload_episode_to_podbean(title: str, media_url: str, description: str) -> str | None:
-    token = _get_access_token()
+MAX_LEN = 500  # Podbean free-plan limit (characters)
+
+def _truncate(text: str, limit: int = MAX_LEN) -> str:
+    txt = text.strip().replace("\n", " ")
+    return txt[: limit - 1] + "…" if len(txt) >= limit else txt
+
+def upload_episode_to_podbean(title: str,
+                              media_url: str,
+                              description: str) -> Optional[str]:
+
+    token = _get_access_token()      # ← ここを追加
 
     payload = {
         "title": title,
-        "status": "publish",
+        "media_url": media_url,
         "type": "public",
-        "format": "mp3",
-        "source_url": media_url,
-        "content": description,
+        "content": _truncate(description),
     }
     headers = {"Authorization": f"Bearer {token}"}
 
     r = requests.post(EPISODE_URL, data=payload, headers=headers, timeout=30)
     if r.ok:
-        episode_link = r.json().get("link")
-        print("✅ Podbean episode OK:", episode_link)
-        return episode_link
+        link = r.json().get("link")
+        print("✅ Podbean episode OK:", link)
+        return link
     else:
         print("Podbean upload failed:", r.text)
         return None
