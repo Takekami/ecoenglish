@@ -9,16 +9,17 @@ TOKEN_ENDPOINT   = "https://api.podbean.com/v1/oauth/token"
 UPLOAD_ENDPOINT  = "https://api.podbean.com/v1/episodes/upload"
 EPISODE_ENDPOINT = "https://api.podbean.com/v1/episodes"
 
-def _get_access_token() -> str:
-    r = requests.post(
-        TOKEN_ENDPOINT,
-        data={
-            "grant_type":      "client_credentials",
-            "client_id":       ID,
-            "client_secret":   SECRET,
-            "scope":           "episode_write"
-        })
-    r.raise_for_status()
+def _get_access_token():
+    url = "https://api.podbean.com/v1/oauth/token"
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id":     os.getenv("PODBEAN_CLIENT_ID"),
+        "client_secret": os.getenv("PODBEAN_CLIENT_SECRET"),
+        "scope": "episode_publish"
+    }
+    headers = {"Content-Type": "application/x-www-form-urlencoded"}
+    r = requests.post(url, data=payload, headers=headers, timeout=10)
+    r.raise_for_status()           # ここで 400 が出る場合は上の5項目を再点検
     return r.json()["access_token"]
 
 def _download(url: str) -> str:
