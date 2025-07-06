@@ -1,34 +1,58 @@
 import os
 import requests
 from pathlib import Path
+from requests.exceptions import HTTPError
 
-# Configuration via environment variables
-# Obtain an OAuth2 token for your Spreaker account via the Developer Dashboard (Authentication guide)
-SPREAKER_SHOW_ID = os.environ["SPEAKER_CLIENT_ID"]
-SPREAKER_OAUTH_TOKEN = os.environ["SPEAKER_CLIENT_SECRET"]
+# ── Configuration ───────────────────────────────────────────────────────────
+TOKEN_URL           = "https://api.spreaker.com/oauth2/token"
+API_BASE            = "https://api.spreaker.com/v2"
+SPREAKER_SHOW_ID    = os.environ["SPREAKER_SHOW_ID"]
+CLIENT_ID           = os.environ["SPREAKER_CLIENT_ID"]
+CLIENT_SECRET       = os.environ["SPREAKER_CLIENT_SECRET"]
+REFRESH_TOKEN       = os.environ["SPREAKER_REFRESH_TOKEN"]  # 初回取得のリフレッシュトークン
 
-API_BASE = "https://api.spreaker.com/v2"
+# ── OAuth2 Helper ───────────────────────────────────────────────────────────
+def _refresh_access_token() -> str:
+    """
+    リフレッシュトークンを使って新しい access_token を取得し、
+    環境変数も更新して返します。
+    """
+    data = {
+        "grant_type":    "refresh_token",
+        "client_id":     CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "refresh_token": REFRESH_TOKEN,
+    }
+    r = requests.post(TOKEN_URL, data=data, timeout=15)
+    r.raise_for_status()
+    j = r.json()
+    # 環境変数を上書きして次回以降も使えるように
+    os.environ["SPREAKER_OAUTH_TOKEN"]  = j["access_token"]
+    os.environ["SPREAKER_REFRESH_TOKEN"] = j["refresh_token"]
+    return j["access_token"]
 
+def _get_auth_header() -> dict:
+    """
+    有効な access_token を返すヘッダーを作成。
+    トークンが未設定 or 期限切れのときは自動でリフレッシュを試みます。
+    """
+    token = os.environ.get("SPREAKER_OAUTH_TOKEN")
+    if not token:
+        token = _refresh_access_token()
+    return {"Authorization": f"Bearer {token}"}
 
+# ── Episode Upload ───────────────────────────────────────────────────────────
 def upload_episode_to_spreaker(
     local_audio_path: str,
     title: str,
     description: str,
-    scheduled_at: str | None = None  # ISO8601 datetime if you want to schedule
+    scheduled_at: str | None = None  # "2025-07-07T08:00:00+09:00" のような ISO8601
 ) -> dict:
     """
-    Uploads a local MP3 to Spreaker and publishes it as a new episode.
-    Returns the JSON response with episode metadata.
-
-    - local_audio_path: Path to your generated .mp3
-    - title: Episode title
-    - description: Episode description
-    - scheduled_at: Optional ISO8601 string to schedule publication
+    ローカル MP3 を Spreaker にアップロードし、エピソードを公開します。
+    成功時は Spreaker API のレスポンス 'response' 部分を dict で返します。
     """
     url = f"{API_BASE}/shows/{SPREAKER_SHOW_ID}/episodes"
-    headers = {"Authorization": f"Bearer {SPREAKER_OAUTH_TOKEN}"}
-
-    # Prepare multipart form-data
     files = {
         "media_file": (
             Path(local_audio_path).name,
@@ -37,12 +61,25 @@ def upload_episode_to_spreaker(
         )
     }
     data = {
-        "title": title,
+        "title":       title,
         "description": description,
     }
     if scheduled_at:
         data["scheduled_at"] = scheduled_at
 
+    # 1) access_token で試しにアップロード
+    headers = _get_auth_header()
     resp = requests.post(url, headers=headers, files=files, data=data, timeout=60)
-    resp.raise_for_status()
+
+    try:
+        resp.raise_for_status()
+    except HTTPError:
+        # 401 Unauthorized の場合はリフレッシュ→再試行
+        if resp.status_code == 401:
+            headers = {"Authorization": f"Bearer {_refresh_access_token()}"}
+            resp = requests.post(url, headers=headers, files=files, data=data, timeout=60)
+            resp.raise_for_status()
+        else:
+            raise
+
     return resp.json()["response"]

@@ -19,13 +19,14 @@ S3_BUCKET            = os.getenv("S3_BUCKET_NAME")
 WP_URL               = os.getenv("WP_URL")
 WP_USER              = os.getenv("WP_USER")
 WP_APP_PASS          = os.getenv("WP_APP_PASS")
-SPREAKER_SHOW_ID     = os.getenv("SPEAKER_CLIENT_ID")
-SPREAKER_OAUTH_TOKEN = os.getenv("SPEAKER_CLIENT_SECRET")
+SPREAKER_SHOW_ID     = os.getenv("SPREAKER_SHOW_ID")
+SPREAKER_OAUTH_TOKEN = os.getenv("SPREAKER_OAUTH_TOKEN")
+SPREAKER_REFRESH_TOKEN = os.getenv("SPREAKER_REFRESH_TOKEN")
 
 REQ = [
     OPENAI_API_KEY, S3_BUCKET,
     WP_URL, WP_USER, WP_APP_PASS,
-    SPREAKER_SHOW_ID, SPREAKER_OAUTH_TOKEN
+    SPREAKER_SHOW_ID, SPREAKER_OAUTH_TOKEN, SPREAKER_REFRESH_TOKEN
 ]
 if not all(REQ):
     raise RuntimeError("Missing required env vars")
