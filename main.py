@@ -102,7 +102,19 @@ def handler(event=None, context=None):
     jp     = extract(md, "日本語での経済ニュース解説")
 
     # 3) ブログ投稿 --------------------------------------------------------
-    html = build_blog_post_html(title, script, vocab, lq, rq, ans, gp, jp)
+    html = build_blog_post_html(
+        "B1–B2",        # level
+        title,          # 記事タイトル
+        link,           # 記事の元URL
+        script,         # スクリプト本文
+        vocab,          # Vocabulary
+        lq,             # Listening Questions
+        rq,             # Reading Questions
+        ans,            # Answers
+        gp,             # Grammar Point
+        jp,             # 日本語解説
+        audio_url,      # 生成したMP3の公開URL
+    )
     post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
 
     # 4) TTS → S3 アップロード ---------------------------------------------
