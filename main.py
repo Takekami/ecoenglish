@@ -101,25 +101,25 @@ def handler(event=None, context=None):
     gp     = extract(md, "Grammar Point")
     jp     = extract(md, "日本語での経済ニュース解説")
 
-    # 3) ブログ投稿 --------------------------------------------------------
+    # 3) TTS → S3 アップロード
+    mp3_path   = synthesize_speech(script, "news_episode.mp3")
+    audio_url  = upload_to_s3(mp3_path, S3_BUCKET, "audio")
+
+    # 4) ブログ投稿
     html = build_blog_post_html(
-        "B1–B2",        # level
-        title,          # 記事タイトル
-        link,           # 記事の元URL
-        script,         # スクリプト本文
-        vocab,          # Vocabulary
-        lq,             # Listening Questions
-        rq,             # Reading Questions
-        ans,            # Answers
-        gp,             # Grammar Point
-        jp,             # 日本語解説
-        audio_url,      # 生成したMP3の公開URL
+        "B1–B2",   # level
+        title,     # 記事タイトル
+        link,      # 元記事URL
+        script,    # スクリプト
+        vocab,     # Vocabulary
+        lq,        # Listening Questions
+        rq,        # Reading Questions
+        ans,       # Answers
+        gp,        # Grammar Point
+        jp,        # 日本語解説
+        audio_url, # MP3 の公開 URL
     )
     post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
-
-    # 4) TTS → S3 アップロード ---------------------------------------------
-    mp3_path = synthesize_speech(script, "news_episode.mp3")
-    audio_url = upload_to_s3(mp3_path, S3_BUCKET, "audio")
 
     # 5) Spreaker に自動アップロード --------------------------------------
     episode = upload_episode_to_spreaker(
@@ -137,10 +137,10 @@ def handler(event=None, context=None):
         "Summary Samurai",
         "最新の経済ニュースを英語で学ぶ。",
         [{
-            "title": f"{title}（B1–B2対応）",
-            "description": summary,
-            "mp3_url": audio_url,
-            "pub_date": datetime.datetime.utcnow(),
+        "title": f"{title}（B1–B2対応）",
+        "description": summary,
+        "mp3_url": audio_url,
+        "pub_date": datetime.datetime.utcnow(),
         }],
     )
     tmp = Path("/tmp/rss.xml")
