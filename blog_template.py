@@ -39,6 +39,28 @@ function checkListening() {{
 </script>
 """
 
+    # Vocabulary HTML with collapsible Japanese meaning (empty for now or to be replaced)
+    vocab_html = "<ul class='list-unstyled'>"
+    for line in vocab.strip().splitlines():
+        if ":" in line:
+            word, definition = line.split(":", 1)
+            vocab_html += f"""
+            <li class="mb-2">
+                <strong>{word.strip()}</strong>: {definition.strip()}
+                <details class="mt-1"><summary class="text-primary">日本語の意味を見る</summary>
+                    <span class="text-muted">（ここに日本語訳を追加できます）</span>
+                </details>
+            </li>"""
+    vocab_html += "</ul>"
+
+    # Grammar Point HTML with optional Japanese explanation
+    grammar_html = markdown(gp, extensions=["extra"])
+    grammar_html += """
+<details class="mt-2"><summary class="text-primary">🈁 文法の日本語補足を表示</summary>
+<p class="text-muted">（ここに「現在完了進行形は“ずっと〜してきた”を表す」などを補足）</p>
+</details>
+"""
+
     html = f"""
 <html>
 <head>
@@ -54,10 +76,10 @@ function checkListening() {{
 {markdown(script, extensions=["extra"])}
 
 <h2>📝 Vocabulary</h2>
-{markdown(vocab, extensions=["extra"])}
+{vocab_html}
 
 <h2>✏️ Grammar Point</h2>
-{markdown(gp, extensions=["extra"])}
+{grammar_html}
 
 <h2>❓ Listening Questions</h2>
 {markdown(lq, extensions=["extra"])}
