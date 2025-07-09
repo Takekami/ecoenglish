@@ -103,8 +103,8 @@ def handler(event=None, context=None):
     jp     = extract(md, "日本語での経済ニュース解説")
 
     # 3) TTS → S3 アップロード
-    mp3_path   = synthesize_speech(script, "news_episode.mp3")
-    audio_url  = upload_to_s3(mp3_path, S3_BUCKET, "audio")
+    mp3_path  = synthesize_speech(script, "news_episode.mp3")
+    audio_url = upload_to_s3(mp3_path, S3_BUCKET, "audio")
 
     # 4) ブログ投稿
     html = build_blog_post_html(
@@ -112,12 +112,12 @@ def handler(event=None, context=None):
         title,     # 記事タイトル
         link,      # 元記事URL
         script,    # スクリプト
-        vocab,     # Vocabulary
+        vocab,     # Vocabulary セクション丸ごと
         lq,        # Listening Questions
         rq,        # Reading Questions
         ans,       # Answers
         gp,        # Grammar Point
-        jp,        # 日本語解説
+        jp,        # 日本語経済解説
         audio_url, # MP3 の公開 URL
     )
     post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)

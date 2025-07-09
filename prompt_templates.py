@@ -30,7 +30,7 @@ Do not provide answers.
 ...
 
 ### Vocabulary
-- word : meaning
+- word : meaning（日本語訳：ここに日本語訳を記載）
 ...
 
 ### Listening Questions
@@ -56,7 +56,7 @@ Do not provide answers.
 ...
 
 ### Grammar Point
-**<Name of structure>** – “<quoted sentence>”
+**<Name of structure>** – “<quoted sentence>”（ここに一文で文法ポイントの日本語補足を記載）
 
 ### 日本語での経済ニュース解説
 ...

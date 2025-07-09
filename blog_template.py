@@ -44,31 +44,61 @@ function checkListening() {{
     if (user3 === ans.lq3) {{ correctCount++; fb3.innerHTML = "✅ <span class='text-success'>正解</span>"; }}
     else {{ fb3.innerHTML = "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq3 + ")"; }}
 
-    document.getElementById("lq-summary").innerHTML =
-      <div class='alert alert-${{correctCount === total ? "success" : "info"}} mt-3'>
-       ${{total}}問中${{correctCount}}問正解！${{correctCount === total ? "🎉 Great!" : "Keep practicing!"}}
-      </div>;
+    document.getElementById("lq-summary").innerHTML = `
+      <div class="alert alert-${{correctCount === total ? "success" : "info"}} mt-3">
+        ${{total}}問中${{correctCount}}問正解！
+      </div>`;
 }}
 </script>
 """
 
     vocab_html = "<ul class='list-unstyled'>"
     for line in vocab.strip().splitlines():
-        if ":" in line:
-            word, definition = line.split(":", 1)
+        if ":" not in line:
+            continue
+        word, definition = line.split(":", 1)
+        word = word.strip()
+        definition = definition.strip()
+
+        # 英語定義 と 日本語訳 を分割
+        m = re.match(r"^(.*?)(?:（日本語訳：(.+?)）)$", definition)
+        if m:
+            eng_def = m.group(1).strip()
+            jp_def  = m.group(2).strip()
+        else:
+            eng_def = definition
+            jp_def  = ""
+
+        vocab_html += f"""
+        <li class="mb-3">
+          <strong>{word}</strong>: {eng_def}"""
+        if jp_def:
             vocab_html += f"""
-            <li class="mb-2">
-                <strong>{word.strip()}</strong>: {definition.strip()}
-                <details class="mt-1"><summary class="text-primary">▼ 日本語の意味を見る</summary>
-                    <span class="text-muted">（ここに日本語訳を追加できます）</span>
-                </details>
-            </li>"""
+          <details class="mt-1">
+            <summary class="text-primary">日本語の意味を見る</summary>
+            <div class="mt-1">{jp_def}</div>
+          </details>"""
+        vocab_html += "\n        </li>"
+
     vocab_html += "</ul>"
 
-    grammar_html = markdown(gp, extensions=["extra"])
-    grammar_html += """
-<details class="mt-2"><summary class="text-primary">▼🈁 文法の日本語補足を表示</summary>
-<p class="text-muted">（ここに「現在完了進行形は“ずっと〜してきた”を表す」などを補足）</p>
+    # raw_gp は markdown 処理前の生テキストを想定
+    raw_gp = gp.strip()
+    # 「…）(日本語補足）」の形かチェック
+    if "（" in raw_gp and raw_gp.endswith("）"):
+        main_part, jp_part = raw_gp.rsplit("（", 1)
+        jp_part = jp_part.rstrip("）")
+    else:
+        main_part, jp_part = raw_gp, ""
+
+    # 英語部分を Markdown→HTML に
+    grammar_html = markdown(main_part, extensions=["extra"])
+    # 日本語補足は <details> で隠す
+    if jp_part:
+        grammar_html += f"""
+<details class="mt-2">
+  <summary class="text-primary">文法の日本語補足を見る</summary>
+  <div class="mt-1">{jp_part}</div>
 </details>
 """
 
