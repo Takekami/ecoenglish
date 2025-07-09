@@ -74,7 +74,7 @@ function checkListening() {{
 
     jp_html = ""
     if jp.strip():
-        jp_html = f"<h2>🇯🇵 日本語での経済ニュース解説</h2>\n<p>{markdown(jp, extensions=['extra'])}</p>"
+        jp_html = f"<h2>🇯🇵 日本語での経済ニュース解説</h2>\n{markdown(jp, extensions=['extra'])}"
 
     html = f"""
 <html>

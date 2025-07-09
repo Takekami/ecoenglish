@@ -58,7 +58,7 @@ Do not provide answers.
 ### Grammar Point
 **<Name of structure>** – “<quoted sentence>”
 
-### 日本語での統計ニュース解説
+### 日本語での経済ニュース解説
 ...
 ```
 INPUT  
