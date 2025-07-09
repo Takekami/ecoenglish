@@ -32,14 +32,26 @@ function checkListening() {{
     const fb2 = document.getElementById("fb-lq2");
     const fb3 = document.getElementById("fb-lq3");
 
-    fb1.innerHTML = (user1 === ans.lq1) ? "✅ <span class='text-success'>正解</span>" : "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq1 + ")";
-    fb2.innerHTML = (user2 === ans.lq2) ? "✅ <span class='text-success'>正解</span>" : "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq2 + ")";
-    fb3.innerHTML = (user3 === ans.lq3) ? "✅ <span class='text-success'>正解</span>" : "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq3 + ")";
+    let correctCount = 0;
+    let total = 3;
+
+    if (user1 === ans.lq1) {{ correctCount++; fb1.innerHTML = "✅ <span class='text-success'>正解</span>"; }}
+    else {{ fb1.innerHTML = "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq1 + ")"; }}
+
+    if (user2 === ans.lq2) {{ correctCount++; fb2.innerHTML = "✅ <span class='text-success'>正解</span>"; }}
+    else {{ fb2.innerHTML = "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq2 + ")"; }}
+
+    if (user3 === ans.lq3) {{ correctCount++; fb3.innerHTML = "✅ <span class='text-success'>正解</span>"; }}
+    else {{ fb3.innerHTML = "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq3 + ")"; }}
+
+    document.getElementById("lq-summary").innerHTML =
+      `<div class='alert alert-${{correctCount === total ? "success" : "info"}} mt-3'>
+       ${total}問中${{correctCount}}問正解！${{correctCount === total ? "🎉 Great!" : "Keep practicing!"}}
+      </div>`;
 }}
 </script>
 """
 
-    # Vocabulary HTML with collapsible Japanese meaning (empty for now or to be replaced)
     vocab_html = "<ul class='list-unstyled'>"
     for line in vocab.strip().splitlines():
         if ":" in line:
@@ -47,19 +59,22 @@ function checkListening() {{
             vocab_html += f"""
             <li class="mb-2">
                 <strong>{word.strip()}</strong>: {definition.strip()}
-                <details class="mt-1"><summary class="text-primary">日本語の意味を見る</summary>
+                <details class="mt-1"><summary class="text-primary">▼ 日本語の意味を見る</summary>
                     <span class="text-muted">（ここに日本語訳を追加できます）</span>
                 </details>
             </li>"""
     vocab_html += "</ul>"
 
-    # Grammar Point HTML with optional Japanese explanation
     grammar_html = markdown(gp, extensions=["extra"])
     grammar_html += """
-<details class="mt-2"><summary class="text-primary">🈁 文法の日本語補足を表示</summary>
+<details class="mt-2"><summary class="text-primary">▼🈁 文法の日本語補足を表示</summary>
 <p class="text-muted">（ここに「現在完了進行形は“ずっと〜してきた”を表す」などを補足）</p>
 </details>
 """
+
+    jp_html = ""
+    if jp.strip():
+        jp_html = f"<h2>🇯🇵 日本語での経済ニュース解説</h2>\n<p>{markdown(jp, extensions=['extra'])}</p>"
 
     html = f"""
 <html>
@@ -105,26 +120,28 @@ function checkListening() {{
   </li>
 </ol>
 <button onclick="checkListening()" class="btn btn-primary mt-3">Submit</button>
+<div id="lq-summary"></div>
 
 <h2>📚 Reading Questions</h2>
 {markdown(rq, extensions=["extra"])}
 <ol>
   <li>
     <textarea class="form-control mb-2" rows="2"></textarea>
-    <details><summary>🗝️ 解答を見る</summary>{answers[3] if len(answers) > 3 else ''}</details>
+    <details><summary class="text-primary">🔑 解答を見る</summary>{answers[3] if len(answers) > 3 else ''}</details>
+    <br><br>
   </li>
   <li>
     <textarea class="form-control mb-2" rows="2"></textarea>
-    <details><summary>🗝️ 解答を見る</summary>{answers[4] if len(answers) > 4 else ''}</details>
+    <details><summary class="text-primary">🔑 解答を見る</summary>{answers[4] if len(answers) > 4 else ''}</details>
+    <br><br>
   </li>
   <li>
     <textarea class="form-control mb-2" rows="2"></textarea>
-    <details><summary>🗝️ 解答を見る</summary>{answers[5] if len(answers) > 5 else ''}</details>
+    <details><summary class="text-primary">🔑 解答を見る</summary>{answers[5] if len(answers) > 5 else ''}</details>
   </li>
 </ol>
 
-<h2>🇯🇵 日本語での経済ニュース解説</h2>
-{markdown(jp, extensions=["extra"])}
+{jp_html}
 
 <p class="text-muted">Source: <a href="{url}">{url}</a></p>
 
