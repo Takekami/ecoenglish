@@ -33,7 +33,7 @@ function checkListening() {{
     const fb3 = document.getElementById("fb-lq3");
 
     let correctCount = 0;
-    let total = 3;
+    const total = 3;
 
     if (user1 === ans.lq1) {{ correctCount++; fb1.innerHTML = "✅ <span class='text-success'>正解</span>"; }}
     else {{ fb1.innerHTML = "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq1 + ")"; }}
@@ -45,9 +45,9 @@ function checkListening() {{
     else {{ fb3.innerHTML = "❌ <span class='text-danger'>不正解</span>（正答: " + ans.lq3 + ")"; }}
 
     document.getElementById("lq-summary").innerHTML =
-      `<div class='alert alert-${{correctCount === total ? "success" : "info"}} mt-3'>
-       ${total}問中${{correctCount}}問正解！${{correctCount === total ? "🎉 Great!" : "Keep practicing!"}}
-      </div>`;
+      <div class='alert alert-${{correctCount === total ? "success" : "info"}} mt-3'>
+       ${{total}}問中${{correctCount}}問正解！${{correctCount === total ? "🎉 Great!" : "Keep practicing!"}}
+      </div>;
 }}
 </script>
 """
