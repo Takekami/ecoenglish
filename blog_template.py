@@ -61,21 +61,22 @@ def build_blog_post_html(
         vocab_html += f"<strong>{word}</strong>: {eng_def}"
         if example:
             vocab_html += f"<div class='mt-1'><em>例文:</em> “{example}”</div>"
-        if colls:
+        if colls or jp_term:
             vocab_html += (
                 "<details class='mt-1'>"
-                "<summary class='text-primary'>▼ Collocationsを見る</summary>"
-                "<ul>"
-                + "".join(f"<li>{c}</li>" for c in colls)
-                + "</ul></details>"
+                "<summary class='text-primary'>▼ Collocations／日本語の意味を見る</summary>"
             )
-        if jp_term:
-            vocab_html += (
-                "<details class='mt-1'>"
-                "<summary class='text-primary'>▼ 日本語の意味を見る</summary>"
-                f"<div class='mt-1'>{jp_term}</div>"
-                "</details>"
-            )
+            # Collocations
+            if colls:
+                vocab_html += "<ul>"
+                for c in colls:
+                    vocab_html += f"<li>{c}</li>"
+                vocab_html += "</ul>"
+            # 日本語訳
+            if jp_term:
+                vocab_html += f"<div class='mt-2'>{jp_term}</div>"
+            vocab_html += "</details>"
+
         vocab_html += "</li>"
     vocab_html += "</ul>"
 
@@ -110,7 +111,7 @@ def build_blog_post_html(
     if jp_part:
         grammar_html += (
             "<details class='mt-2'>"
-            "<summary class='text-primary'>▼ 文法の日本語補足を見る</summary>"
+            "<summary class='text-primary'>文法の日本語補足を見る</summary>"
             f"<div class='mt-1'>{jp_part}</div>"
             "</details>"
         )
