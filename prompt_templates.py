@@ -21,7 +21,7 @@ You are an ELT writer creating CEFR-{level} materials.
 - 1 Vocabulary-in-context question (meaning of a word from the script)
 Do not provide answers.
 8. Add **Answers** – model answers for all 6 questions (just the answers).  
-9. Add **Japanese Economic Insight** – 2 ‑3 sentences (Japanese) linking the story to the wider economy / markets.  
+9. Add **Japanese Economic Insight** – **約300～400字**で、記事の背景・要因・国内外への影響・今後の見通しなどを含め、自然な日本語でしっかり深掘りした解説。
 10. Identify one **Grammar Point** that appears in the SCRIPT and is suitable for {level}. Give a one‑sentence explanation **and quote the sentence**.
 
 ### OUTPUT FORMAT  
