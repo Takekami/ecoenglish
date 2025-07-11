@@ -101,6 +101,8 @@ def handler(event=None, context=None):
     ans    = extract(md, "Answers")
     gp     = extract(md, "Grammar Point")
     jp     = extract(md, "日本語での経済ニュース解説")
+    usage  = extract(md, "使用場面")
+    example_usage= extract(md, "使用例文")
 
     # 3) TTS → S3 アップロード
     mp3_path  = synthesize_speech(script, "news_episode.mp3")
@@ -127,6 +129,8 @@ def handler(event=None, context=None):
         rq,
         ans,
         gp,
+        usage,
+        example_usage,
         jp,
         audio_url,
     )
