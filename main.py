@@ -157,7 +157,7 @@ def handler(event=None, context=None):
         jp,
         audio_url,
     )
-    post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
+    post_to_wordpress(f"英語ニュース教材：{title}（Intermediate レベル）", html)
 
     # 6) RSS 生成 & S3 アップロード ----------------------------------------
     rss_xml = generate_rss(
@@ -166,7 +166,7 @@ def handler(event=None, context=None):
         "Summary Samurai",
         "最新の経済ニュースを英語で学ぶ。",
         [{
-        "title": f"{title}（B1–B2対応）",
+        "title": f"{title}（Intermediate レベル）",
         "description": summary,
         "mp3_url": audio_url,
         "pub_date": datetime.datetime.utcnow(),
