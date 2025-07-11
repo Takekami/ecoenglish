@@ -104,32 +104,33 @@ def handler(event=None, context=None):
 
     # 3) TTS → S3 アップロード
     mp3_path  = synthesize_speech(script, "news_episode.mp3")
-    audio_url = upload_to_s3(mp3_path, S3_BUCKET, "audio")
+    upload_to_s3(mp3_path, S3_BUCKET, "audio")
 
-    # 4) ブログ投稿
-    html = build_blog_post_html(
-        "B1–B2",   # level
-        title,     # 記事タイトル
-        link,      # 元記事URL
-        script,    # スクリプト
-        vocab,     # Vocabulary セクション丸ごと
-        lq,        # Listening Questions
-        rq,        # Reading Questions
-        ans,       # Answers
-        gp,        # Grammar Point
-        jp,        # 日本語経済解説
-        audio_url, # MP3 の公開 URL
-    )
-    post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
-
-    # 5) Spreaker に自動アップロード --------------------------------------
+    # 4) Spreaker へエピソード登録 → ストリーム URL を取得
     episode = upload_episode_to_spreaker(
         local_audio_path=mp3_path,
         title=f"{title}（B1–B2レベル）",
         description="毎朝更新の英語リスニング教材です。",
-        scheduled_at=None  # 即時公開なら None、予約するなら ISO8601 文字列
+        scheduled_at=None
     )
-    print("Published episode ID:", episode.get("episode_id"))
+    # 永続的に使えるストリーム URL を audio_url にセット
+    audio_url = episode.get("stream_url") or episode.get("download_url")
+
+    # 5) ブログ投稿（ここで audio_url が Spreaker URL になる）
+    html = build_blog_post_html(
+        "B1–B2",
+        title,
+        link,
+        script,
+        vocab,
+        lq,
+        rq,
+        ans,
+        gp,
+        jp,
+        audio_url,
+    )
+    post_to_wordpress(f"英語ニュース教材：{title}（B1–C1対応）", html)
 
     # 6) RSS 生成 & S3 アップロード ----------------------------------------
     rss_xml = generate_rss(
