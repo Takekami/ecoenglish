@@ -64,7 +64,7 @@ def build_blog_post_html(
         if colls or jp_term:
             vocab_html += (
                 "<details class='mt-1'>"
-                "<summary class='text-primary'>▼ Collocations／日本語の意味を見る</summary>"
+                "<summary class='text-primary'>Collocations／日本語の意味を見る</summary>"
             )
             # Collocations
             if colls:
