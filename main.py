@@ -54,6 +54,29 @@ def fetch_article(url: str):
     entries = [e for e in feed.entries if "summary" in e]
     return random.choice(entries) if entries else None
 
+def is_significant(title: str, summary: str, link: str) -> bool:
+    """記事が経済的／社会的に重要か yes/no で判定する"""
+    prompt = f"""
+### ROLE
+You are a concise classifier.
+
+### TASK
+Read the following headline and summary, then decide if it is economically or socially significant.
+Reply with **yes** or **no** only.
+
+Title: {title}
+Summary: {summary}
+URL: {link}
+"""
+    # ここは小モデルにするとコスト削減になるので turbo を推奨
+    r = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.0,
+    )
+    ans = r.choices[0].message.content.strip().lower()
+    return ans.startswith("yes")
+
 def gpt(level: str, title: str, summary: str, link: str) -> str:
     prompt = get_prompt_for_level(level, title, summary, link)
     r = client.chat.completions.create(
@@ -80,7 +103,7 @@ def handler(event=None, context=None):
         candidate = fetch_article(select_feed())
         if not candidate:
             continue
-        if not gpt("B1+", candidate.title, candidate.summary, candidate.link).startswith("SKIP"):
+        if is_significant(candidate.title, candidate.summary, candidate.link):
             art = candidate
             break
 
