@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from pathlib import Path
 from requests.exceptions import HTTPError
@@ -46,7 +47,7 @@ def upload_episode_to_spreaker(
     local_audio_path: str,
     title: str,
     description: str,
-    scheduled_at: str | None = None  # "2025-07-07T08:00:00+09:00" のような ISO8601
+    scheduled_at: str | None = None
 ) -> dict:
     """
     ローカル MP3 を Spreaker にアップロードし、エピソードを公開します。
@@ -82,4 +83,29 @@ def upload_episode_to_spreaker(
         else:
             raise
 
-    return resp.json()["response"]
+    # 最初のレスポンスから episode_id を取る
+    data = resp.json()["response"]
+    episode_id = data.get("episode_id")
+
+    # エンコード完了までポーリング
+    for _ in range(20):  # 最大20回（約100秒）待つ
+        info = requests.get(
+            f"{API_BASE}/episodes/{episode_id}",
+            headers=headers,
+            timeout=30
+        )
+        info.raise_for_status()
+        info_data = info.json()["response"]
+        status = info_data.get("encoding_status")
+        if status == "READY":
+            # stream_url や download_url が揃っているはず
+            return {
+                "stream_url": info_data.get("stream_url"),
+                "download_url": info_data.get("download_url"),
+                **info_data
+            }
+        # まだ PENDING なら少し待って再試行
+        time.sleep(5)
+
+    # タイムアウトしたら、とりあえず最初のデータを返す
+    return data
