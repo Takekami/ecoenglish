@@ -84,28 +84,38 @@ def upload_episode_to_spreaker(
             raise
 
     # 最初のレスポンスから episode_id を取る
-    data = resp.json()["response"]
-    episode_id = data.get("episode_id")
+    resp_data = resp.json().get("response", {})
+    # Spreaker API では 'episode_id' か 'id' のどちらかで返ってくることがあるので両方チェック
+    episode_id = resp_data.get("episode_id") or resp_data.get("id")
+    if not episode_id:
+        # 取得失敗なら明示的にエラーにして続きを止める
+        raise RuntimeError(f"Failed to get episode_id from Spreaker response: {resp_data!r}")
 
     # エンコード完了までポーリング
     for _ in range(20):  # 最大20回（約100秒）待つ
-        info = requests.get(
-            f"{API_BASE}/episodes/{episode_id}",
-            headers=headers,
-            timeout=30
-        )
-        info.raise_for_status()
-        info_data = info.json()["response"]
+        try:
+            info = requests.get(
+                f"{API_BASE}/episodes/{episode_id}",
+                headers=headers,
+                timeout=30
+            )
+            info.raise_for_status()
+        except HTTPError as e:
+            # 一度だけログを出してからリトライ、最終的にタイムアウト判定に移行
+            print(f"⚠️ Polling episode status failed (attempt {_+1}):", e)
+            time.sleep(5)
+            continue
+        info_data = info.json().get("response", {})
         status = info_data.get("encoding_status")
         if status == "READY":
-            # stream_url や download_url が揃っているはず
-            return {
-                "stream_url": info_data.get("stream_url"),
-                "download_url": info_data.get("download_url"),
-                **info_data
-            }
+             # stream_url や download_url が揃っているはず
+             return {
+                 "stream_url": info_data.get("stream_url"),
+                 "download_url": info_data.get("download_url"),
+                 **info_data
+             }
         # まだ PENDING なら少し待って再試行
         time.sleep(5)
 
     # タイムアウトしたら、とりあえず最初のデータを返す
-    return data
+    return resp_data
