@@ -83,9 +83,11 @@ def upload_episode_to_spreaker(
         else:
             raise
 
-    # 最初のレスポンスから episode_id を取る
-    resp_data = resp.json().get("response", {})
-    # Spreaker API では 'episode_id' か 'id' のどちらかで返ってくることがあるので両方チェック
+    # 最初のレスポンスから episode 情報を取り出し
+    response = resp.json().get("response", {})
+    # "episode" ネストがあれば展開
+    resp_data = response.get("episode", response)
+    # episode_id または id を取得
     episode_id = resp_data.get("episode_id") or resp_data.get("id")
     if not episode_id:
         # 取得失敗なら明示的にエラーにして続きを止める
@@ -105,7 +107,8 @@ def upload_episode_to_spreaker(
             print(f"⚠️ Polling episode status failed (attempt {_+1}):", e)
             time.sleep(5)
             continue
-        info_data = info.json().get("response", {})
+        raw = info.json().get("response", {})
+        info_data = raw.get("episode", raw)
         status = info_data.get("encoding_status")
         if status == "READY":
              # stream_url や download_url が揃っているはず
