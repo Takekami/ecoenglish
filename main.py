@@ -133,11 +133,15 @@ def handler(event=None, context=None):
 
     # 4) Spreaker へエピソード登録 → ストリーム URL を取得
     episode = upload_episode_to_spreaker(
-        local_audio_path=mp3_path,
-        title=f"{title}（Intermediate レベル）",
-        description="毎朝更新の英語リスニング教材です。",
-        scheduled_at=None
-    )
+    local_audio_path=mp3_path,
+    title=f"{title}（Intermediate レベル）",
+    description=(
+        "毎朝更新の英語リスニング教材です。\n"
+        "スクリプト全文、語彙リスト、文法解説、クイズ解答はブログ「Econenglish」で無料公開。\n"
+        "https://econenglish.jp/category/english-learning/"
+    ),
+    scheduled_at=None
+)
     # 永続的に使えるストリーム URL を audio_url にセット
     audio_url = episode.get("stream_url") or episode.get("download_url")
     print("🎧 audio_url:", audio_url)
