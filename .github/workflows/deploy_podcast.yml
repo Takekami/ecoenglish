@@ -36,7 +36,9 @@ jobs:
           IMAGE_URI: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
           docker build --platform linux/amd64 --provenance=false -t "$IMAGE_URI" .
+          docker tag "$IMAGE_URI" "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
           docker push "$IMAGE_URI"
+          docker push "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
           echo "IMAGE_URI=$IMAGE_URI" >> "$GITHUB_ENV"
 
       # 5) Lambda 関数を更新
