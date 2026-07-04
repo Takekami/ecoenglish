@@ -21,11 +21,11 @@ RSS (Nikkei Asia / BBC Business)
         │
         ▼
    AWS Lambda (container)
-   ┌─────────────────────────────────────────────┐
+   ┌──────────────────────────────────────────────┐
    │  Article selection → GPT filter → GPT lesson │
    │       → OpenAI TTS → S3                      │
    │       → Spreaker → WordPress → S3 (RSS)      │
-   └─────────────────────────────────────────────┘
+   └──────────────────────────────────────────────┘
         │
         ├── Spreaker (podcast)
         ├── WordPress / econenglish.jp (blog + quizzes)
