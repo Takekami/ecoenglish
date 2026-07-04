@@ -35,11 +35,23 @@ openai.api_key = OPENAI_API_KEY
 client = openai.Client(api_key=OPENAI_API_KEY)
 
 # ---------- 定数 ----------
+BLOG_URL = "https://econenglish.jp/category/english-learning/"
+LEVEL_LABEL = "B1–B2"
+RSS_FEED_TITLE = "Econenglish — Asia Business English (B1–B2)"
+RSS_FEED_DESCRIPTION = (
+    "Daily Asia-Pacific business news in English for Japanese intermediate learners. "
+    "Full scripts & quizzes at econenglish.jp"
+)
+RSS_AUTHOR = "Econenglish"
+SPREAKER_DESCRIPTION = (
+    "Daily Asia-Pacific business news, rewritten for intermediate English learners (B1–B2).\n\n"
+    "Full script, vocabulary, grammar notes, quizzes & Japanese commentary:\n"
+    f"{BLOG_URL}"
+)
+
 RSS_FEEDS = [
+    "https://asia.nikkei.com/rss/feed/nar",
     "https://feeds.bbci.co.uk/news/business/rss.xml",
-    "https://feeds.npr.org/1006/rss.xml",
-    "https://www.aljazeera.com/xml/rss/all.xml",
-    "https://www.abc.net.au/news/feed/51892/rss.xml",
 ]
 MAX_TRIES = 5
 
@@ -49,10 +61,23 @@ def select_feed() -> str:
     """Rotate feed daily so we don't always hit the same source."""
     return RSS_FEEDS[datetime.date.today().toordinal() % len(RSS_FEEDS)]
 
+def _entry_summary(entry) -> str | None:
+    for key in ("summary", "description", "content"):
+        val = getattr(entry, key, None)
+        if val and str(val).strip():
+            return str(val).strip()
+    title = getattr(entry, "title", None)
+    return title.strip() if title else None
+
 def fetch_article(url: str):
     feed = feedparser.parse(url)
-    entries = [e for e in feed.entries if "summary" in e]
-    return random.choice(entries) if entries else None
+    candidates = [e for e in feed.entries if _entry_summary(e)]
+    if not candidates:
+        return None
+    entry = random.choice(candidates)
+    if not getattr(entry, "summary", None):
+        entry.summary = _entry_summary(entry)
+    return entry
 
 def is_significant(title: str, summary: str, link: str) -> bool:
     """記事が経済的／社会的に重要か yes/no で判定する"""
@@ -61,7 +86,8 @@ def is_significant(title: str, summary: str, link: str) -> bool:
 You are a concise classifier.
 
 ### TASK
-Read the following headline and summary, then decide if it is economically or socially significant.
+Read the following headline and summary, then decide if it is economically or socially significant
+(Asia-Pacific business, markets, trade, tech, or policy preferred).
 Reply with **yes** or **no** only.
 
 Title: {title}
@@ -133,15 +159,11 @@ def handler(event=None, context=None):
 
     # 4) Spreaker へエピソード登録 → ストリーム URL を取得
     episode = upload_episode_to_spreaker(
-    local_audio_path=mp3_path,
-    title=f"{title}（Intermediate レベル）",
-    description=(
-        "毎朝更新の英語リスニング教材です。\n"
-        "スクリプト全文、語彙リスト、文法解説、クイズ解答はブログ「Econenglish」で無料公開。\n"
-        "https://econenglish.jp/category/english-learning/"
-    ),
-    scheduled_at=None
-)
+        local_audio_path=mp3_path,
+        title=f"{title} | Asia Business English ({LEVEL_LABEL})",
+        description=SPREAKER_DESCRIPTION,
+        scheduled_at=None,
+    )
     # 永続的に使えるストリーム URL を audio_url にセット
     audio_url = episode.get("stream_url") or episode.get("download_url")
     print("🎧 audio_url:", audio_url)
@@ -162,16 +184,16 @@ def handler(event=None, context=None):
         jp,
         audio_url,
     )
-    post_to_wordpress(f"英語ニュース教材：{title}（Intermediate レベル）", html)
+    post_to_wordpress(f"【Asia Business English】{title}（{LEVEL_LABEL}）", html)
 
     # 6) RSS 生成 & S3 アップロード ----------------------------------------
     rss_xml = generate_rss(
-        "英語で学ぶ経済ニュース",
+        RSS_FEED_TITLE,
         "https://econenglish.jp/",
-        "Summary Samurai",
-        "最新の経済ニュースを英語で学ぶ。",
+        RSS_AUTHOR,
+        RSS_FEED_DESCRIPTION,
         [{
-        "title": f"{title}（Intermediate レベル）",
+        "title": f"{title} | Asia Business English ({LEVEL_LABEL})",
         "description": summary,
         "mp3_url": audio_url,
         "pub_date": datetime.datetime.utcnow(),
