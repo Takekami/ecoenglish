@@ -70,6 +70,7 @@ This baseline is useful for comparing **designed automation** against **unaided 
 
 The built system runs as a **single orchestrated pipeline** in AWS Lambda. One scheduled run executes all stages sequentially.
 
+**Implemented process (BPMN)**
 ![Automated TO-BE process](images/to-be-bpmn.png)
 
 **Systems involved:** RSS (Nikkei Asia / BBC Business) → OpenAI → S3 → Spreaker → WordPress.
@@ -86,9 +87,9 @@ Rules designed for the automated daily process:
 
 1. **Input rotation** — One RSS source per day, alternating Nikkei Asia and BBC Business.
 2. **Article selection** — Random entry from the day’s feed; must have at least a headline (summary preferred; headline-only feeds are supported).
-3. **Gate 1 — Topic relevance** — Story must be economically or socially significant, with preference for Asia-Pacific business (markets, trade, tech, policy).
+3. **Gate 1 — Economically / socially significant** (Asia-Pacific business preferred) — Story must pass this check before lesson generation (markets, trade, tech, policy).
 4. **Retry** — If Gate 1 fails or no article is found, select again — maximum **5 attempts** per run.
-5. **Gate 2 — Lesson suitability** — Generated content must pass lesson rules (e.g. not celebrity gossip); otherwise the run stops without publishing.
+5. **Gate 2 — Suitable for learning** — Generated lesson must pass content rules (e.g. not celebrity gossip); otherwise the run stops without publishing (`SKIP`).
 6. **Publish sequence** — Audio stored → podcast episode created → blog post published (with audio embed) → RSS updated.
 7. **Output consistency** — All channels use the same lesson structure and **Asia Business English (B1–B2)** positioning.
 
