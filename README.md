@@ -4,6 +4,8 @@ Automated pipeline that turns Asia-Pacific business news into daily English list
 
 Published at [Econenglish](https://econenglish.jp/category/english-learning/).
 
+For a process-design view (AS-IS / TO-BE, decision points, system handoffs), see [docs/process-design.md](docs/process-design.md).
+
 ## What it does
 
 1. **Select article** — Picks a business news item from a rotating RSS feed (Nikkei Asia or BBC Business), with up to 5 retries if nothing suitable is found.
