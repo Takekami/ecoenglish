@@ -23,7 +23,6 @@ def synthesize_speech(text, filename,
     try:
         r.raise_for_status()
     except HTTPError:
-        # ← ここでエラー理由を出力
         print(f"[TTS ERROR] status={r.status_code}, body={r.text}")
         raise
     path = f"/tmp/{filename}"

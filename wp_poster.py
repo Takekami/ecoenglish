@@ -1,4 +1,3 @@
-# utils/wp_poster.py
 import os, base64, requests
 
 WP_URL  = os.getenv("WP_URL")
