@@ -54,8 +54,12 @@ RSS_FEEDS = [
     "https://feeds.bbci.co.uk/news/business/rss.xml",
 ]
 MAX_TRIES = 5
+LOG_PREFIX = "[ecoenglish]"
 
 # ---------- Helper Functions ----------
+
+def _log(message: str) -> None:
+    print(f"{LOG_PREFIX} {message}")
 
 def select_feed() -> str:
     """Rotate feed daily so we don't always hit the same source."""
@@ -73,14 +77,18 @@ def fetch_article(url: str):
     feed = feedparser.parse(url)
     candidates = [e for e in feed.entries if _entry_summary(e)]
     if not candidates:
+        _log(
+            f"fetch=empty entries={len(feed.entries)} "
+            f"bozo={feed.bozo} feed={url}"
+        )
         return None
     entry = random.choice(candidates)
     if not getattr(entry, "summary", None):
         entry.summary = _entry_summary(entry)
     return entry
 
-def is_significant(title: str, summary: str, link: str) -> bool:
-    """Determine if the article is economically or socially significant"""
+def is_significant(title: str, summary: str, link: str) -> tuple[bool, str]:
+    """Determine if the article is economically or socially significant."""
     prompt = f"""
 ### ROLE
 You are a concise classifier.
@@ -99,8 +107,8 @@ URL: {link}
         messages=[{"role": "user", "content": prompt}],
         temperature=0.0,
     )
-    ans = r.choices[0].message.content.strip().lower()
-    return ans.startswith("yes")
+    ans = r.choices[0].message.content.strip()
+    return ans.lower().startswith("yes"), ans
 
 def gpt(level: str, title: str, summary: str, link: str) -> str:
     prompt = get_prompt_for_level(level, title, summary, link)
@@ -123,24 +131,40 @@ def extract(md: str, header: str) -> str:
 
 def handler(event=None, context=None):
     # 1) Article selection ----------------------------------------------------------
+    feed_url = select_feed()
+    _log(f"START feed={feed_url}")
+
     art = None
-    for _ in range(MAX_TRIES):
-        candidate = fetch_article(select_feed())
+    for attempt in range(1, MAX_TRIES + 1):
+        candidate = fetch_article(feed_url)
         if not candidate:
             continue
-        if is_significant(candidate.title, candidate.summary, candidate.link):
+        accepted, classifier = is_significant(
+            candidate.title, candidate.summary, candidate.link
+        )
+        _log(
+            f"try={attempt} gate=1 classifier={classifier!r} "
+            f"significant={'yes' if accepted else 'no'} "
+            f"title={candidate.title!r} link={candidate.link}"
+        )
+        if accepted:
             art = candidate
             break
 
     if not art:
+        _log(f"result=NO_ARTICLE tries={MAX_TRIES} feed={feed_url}")
         return {"statusCode": 500, "body": "No suitable article"}
 
     title, summary, link = art.title, art.summary, art.link
+    _log(f"gate=1 passed title={title!r} link={link}")
 
     # 2) GPT to generate content --------------------------------------------
     md = gpt("B1+", title, summary, link)
     if md.startswith("SKIP"):
+        _log(f"result=SKIP gate=2 title={title!r} link={link}")
         return {"statusCode": 204, "body": "Article skipped"}
+
+    _log("gate=2 passed, publishing")
 
     script = extract(md, "Script")
     vocab  = extract(md, "Vocabulary")
@@ -183,7 +207,11 @@ def handler(event=None, context=None):
         jp,
         audio_url,
     )
-    post_to_wordpress(f"【Asia Business English】{title}（{LEVEL_LABEL}）", html)
+    wp_link = post_to_wordpress(f"【Asia Business English】{title}（{LEVEL_LABEL}）", html)
+    if not wp_link:
+        _log(f"result=WP_FAILED title={title!r} link={link}")
+    else:
+        _log(f"result=SUCCESS title={title!r} link={link} wordpress={wp_link}")
 
     # 6) RSS to generate and upload to S3 ----------------------------------------
     rss_xml = generate_rss(
