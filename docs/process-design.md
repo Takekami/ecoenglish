@@ -73,7 +73,7 @@ The built system runs as a **single orchestrated pipeline** in AWS Lambda. One s
 **Implemented process (BPMN)**
 ![Automated TO-BE process](images/to-be-bpmn.png)
 
-**Systems involved:** RSS (Nikkei Asia / BBC Business) → OpenAI → S3 → Spreaker → WordPress.
+**Systems involved:** RSS (Nikkei Asia / CNA Business / CNBC Asia) → OpenAI → S3 → Spreaker → WordPress.
 
 Spreaker upload includes token refresh and encoding wait if the API requires it — details in [README](../README.md).
 
@@ -85,7 +85,7 @@ Steps such as **RSS update on S3** exist in the automated process but were not p
 
 Rules designed for the automated daily process:
 
-1. **Input rotation** — One RSS source per day, alternating Nikkei Asia and BBC Business.
+1. **Input rotation** — One RSS source per day, rotating Nikkei Asia, CNA Business, and CNBC Asia.
 2. **Article selection** — Random entry from the day’s feed; must have at least a headline (summary preferred; headline-only feeds are supported).
 3. **Gate 1 — Economically / socially significant** (Asia-Pacific business preferred) — Story must pass this check before lesson generation (markets, trade, tech, policy).
 4. **Retry** — If Gate 1 fails or no article is found, select again — maximum **5 attempts** per run.
@@ -147,7 +147,7 @@ Changes made **after the first working version** of the automated pipeline — n
 |                     | Detail                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Earlier version** | Four feeds on daily rotation: BBC Business, NPR Business, Al Jazeera (all topics), ABC Australia (general news). Broad coverage, but many entries were not business-focused.   |
-| **Current**         | Two feeds: **Nikkei Asia** and **BBC Business**. General-news sources removed.                                                                                                 |
+| **Current**         | Three feeds: **Nikkei Asia**, **CNA Business**, and **CNBC Asia**. BBC Business removed in favour of Asia-Pacific sources.                                                      |
 | **Why**             | Off-topic stories triggered more classifier retries and produced lessons that did not match the “Asia business English” positioning. Narrower inputs → more consistent output. |
 
 

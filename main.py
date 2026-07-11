@@ -51,7 +51,8 @@ SPREAKER_DESCRIPTION = (
 
 RSS_FEEDS = [
     "https://asia.nikkei.com/rss/feed/nar",
-    "https://feeds.bbci.co.uk/news/business/rss.xml",
+    "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511",
+    "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19832390",
 ]
 MAX_TRIES = 5
 LOG_PREFIX = "[ecoenglish]"
@@ -87,6 +88,14 @@ def fetch_article(url: str):
         entry.summary = _entry_summary(entry)
     return entry
 
+def _parse_yes_no(raw: str) -> bool:
+    """Accept yes/no even when the model wraps it in markdown (e.g. **Yes**)."""
+    cleaned = raw.strip().lower()
+    for ch in ("*", "`", '"', "'", ".", "!", "?", ":"):
+        cleaned = cleaned.replace(ch, "")
+    cleaned = cleaned.strip()
+    return cleaned.startswith("yes")
+
 def is_significant(title: str, summary: str, link: str) -> tuple[bool, str]:
     """Determine if the article is economically or socially significant."""
     prompt = f"""
@@ -96,7 +105,7 @@ You are a concise classifier.
 ### TASK
 Read the following headline and summary, then decide if it is economically or socially significant
 (Asia-Pacific business, markets, trade, tech, or policy preferred).
-Reply with **yes** or **no** only.
+Reply with yes or no only. Do not use markdown or punctuation.
 
 Title: {title}
 Summary: {summary}
@@ -108,7 +117,7 @@ URL: {link}
         temperature=0.0,
     )
     ans = r.choices[0].message.content.strip()
-    return ans.lower().startswith("yes"), ans
+    return _parse_yes_no(ans), ans
 
 def gpt(level: str, title: str, summary: str, link: str) -> str:
     prompt = get_prompt_for_level(level, title, summary, link)

@@ -8,7 +8,7 @@ For a process-design view (reference baseline and implemented process in BPMN, b
 
 ## What it does
 
-1. **Select article** — Picks a business news item from a rotating RSS feed (Nikkei Asia or BBC Business), with up to 5 retries if nothing suitable is found.
+1. **Select article** — Picks a business news item from a rotating RSS feed (Nikkei Asia, CNA Business, or CNBC Asia), with up to 5 retries if nothing suitable is found.
 2. **Filter** — Uses GPT-3.5-turbo to check whether the story is economically or socially significant (Asia-Pacific business preferred).
 3. **Generate lesson** — Uses GPT-4o to produce a structured lesson: script, vocabulary, listening/reading questions, answers, grammar point, and Japanese commentary.
 4. **Synthesize audio** — Converts the script to MP3 via OpenAI TTS and uploads it to S3.
@@ -19,7 +19,7 @@ For a process-design view (reference baseline and implemented process in BPMN, b
 ## Architecture
 
 ```
-RSS (Nikkei Asia / BBC Business)
+RSS (Nikkei Asia / CNA Business / CNBC Asia)
         │
         ▼
    AWS Lambda (container)
@@ -114,13 +114,14 @@ The Lambda function is intended to run on a schedule (e.g. AWS EventBridge). Sch
 
 ## News sources
 
-Two RSS feeds rotate daily:
+Three RSS feeds rotate daily:
 
 
-| Feed         | URL                                              |
-| ------------ | ------------------------------------------------ |
-| Nikkei Asia  | `https://asia.nikkei.com/rss/feed/nar`           |
-| BBC Business | `https://feeds.bbci.co.uk/news/business/rss.xml` |
+| Feed          | URL                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| Nikkei Asia   | `https://asia.nikkei.com/rss/feed/nar`                                                      |
+| CNA Business  | `https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml&category=6511`        |
+| CNBC Asia     | `https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=19832390`       |
 
 
 Nikkei Asia entries may contain only a headline (no summary). The pipeline falls back to the title when a summary is missing.
