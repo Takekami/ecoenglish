@@ -112,8 +112,11 @@ Summary: {summary}
 URL: {link}
 """
     r = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        # GPT-6 Luna is the current low-cost model for focused classification.
+        # `none` preserves a deterministic, non-reasoning yes/no response.
+        model="gpt-6-luna",
         messages=[{"role": "user", "content": prompt}],
+        reasoning_effort="none",
         temperature=0.0,
     )
     ans = r.choices[0].message.content.strip()
