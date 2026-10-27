@@ -8,6 +8,14 @@ For a process-design view (reference baseline and implemented process in BPMN, b
 
 ## What it does
 
+Publishing now requires substantive source text, deterministic lesson checks,
+and an independent source/answer review before any audio or publishing writes.
+Headlines alone are not used as evidence. New WordPress posts receive a Japanese
+title, introduction and manual excerpt (used by the site's AIOSEO description).
+See [publishing quality gates](docs/publishing-quality.md) for skip behavior,
+limits, offline tests and rollout verification. These rules supersede the older
+headline fallback and two-gate description below.
+
 1. **Select article** — Picks a business news item from a rotating RSS feed (Nikkei Asia, CNA Business, or CNBC Asia), with up to 5 retries if nothing suitable is found.
 2. **Filter** — Uses GPT-3.5-turbo to check whether the story is economically or socially significant (Asia-Pacific business preferred).
 3. **Generate lesson** — Uses GPT-4o to produce a structured lesson: script, vocabulary, listening/reading questions, answers, grammar point, and Japanese commentary.

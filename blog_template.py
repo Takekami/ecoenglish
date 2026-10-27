@@ -1,5 +1,6 @@
 from markdown import markdown
 import re
+from html import escape
 
 def build_blog_post_html(
     level: str,
@@ -15,6 +16,7 @@ def build_blog_post_html(
     example_usage: str,
     jp: str,
     audio_url: str,
+    introduction: str = "",
 ) -> str:
     # 1) Clean answers
     answers = [
@@ -138,7 +140,8 @@ def build_blog_post_html(
         '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">'
         "</head><body class='container my-4'>"
 
-        "<h2>🎧 Audio</h2>"
+        + (f"<p>{escape(introduction)}</p>" if introduction else "")
+        + "<h2>音声</h2>"
         f'<audio controls src="{audio_url}"></audio>'
 
         "<h2>📖 Script</h2>"

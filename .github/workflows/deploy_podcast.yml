@@ -36,6 +36,7 @@ jobs:
           IMAGE_URI: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
         run: |
           docker build --platform linux/amd64 --provenance=false -t "$IMAGE_URI" .
+          docker run --rm --entrypoint python "$IMAGE_URI" -m unittest discover -s tests -v
           docker tag "$IMAGE_URI" "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
           docker push "$IMAGE_URI"
           docker push "${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest"
@@ -48,3 +49,10 @@ jobs:
             --function-name $FUNCTION_NAME \
             --image-uri $IMAGE_URI \
             --region $AWS_REGION
+          aws lambda wait function-updated-v2 \
+            --function-name $FUNCTION_NAME \
+            --region $AWS_REGION
+          aws lambda get-function \
+            --function-name $FUNCTION_NAME \
+            --region $AWS_REGION \
+            --query '{State:Configuration.State,LastUpdateStatus:Configuration.LastUpdateStatus,Image:Code.ResolvedImageUri}'

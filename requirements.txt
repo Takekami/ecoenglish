@@ -3,3 +3,4 @@ feedparser
 requests
 boto3
 Markdown
+trafilatura>=2.0,<3

@@ -10,12 +10,14 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-def post_to_wordpress(title, html, categories=None, tags=None):
+def post_to_wordpress(title, html, categories=None, tags=None, excerpt=None):
     payload = {
         "title": title,
         "content": html,
         "status": "publish"
     }
+    if excerpt:
+        payload["excerpt"] = excerpt
     if categories:
         payload["categories"] = categories
     if tags:
