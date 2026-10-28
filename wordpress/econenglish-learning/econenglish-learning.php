@@ -234,8 +234,8 @@ final class Econenglish_Learning {
 
     public static function assets() {
         if (is_feed() || is_admin()) { return; }
-        wp_enqueue_style('econenglish-learning', plugins_url('assets/learning.css', __FILE__), array(), self::VERSION);
-        wp_enqueue_script('econenglish-learning', plugins_url('assets/learning.js', __FILE__), array(), self::VERSION, true);
+        wp_enqueue_style('econenglish-learning', set_url_scheme(plugins_url('assets/learning.css', __FILE__), 'https'), array(), self::VERSION);
+        wp_enqueue_script('econenglish-learning', set_url_scheme(plugins_url('assets/learning.js', __FILE__), 'https'), array(), self::VERSION, true);
         wp_add_inline_script('econenglish-learning', 'window.eelConfig=' . wp_json_encode(array('admin' => current_user_can('edit_posts'), 'measurementId' => 'G-EMJ73ZY8ZW')) . ';', 'before');
     }
 
