@@ -1,0 +1,24 @@
+.eel{--eel-ink:#173b3a;--eel-accent:#14665e;--eel-line:#dce8e2;color:#263c3b;font-size:16px;line-height:1.85;margin:24px 0;overflow-wrap:anywhere}
+.eel .eel-kicker{display:block;color:#526b65;font-size:12px;letter-spacing:.06em;font-weight:700;margin:0 0 8px}
+.eel .eel-lead{font-size:clamp(26px,4vw,38px);line-height:1.5;font-weight:800;color:var(--eel-ink);margin:12px 0 20px}
+.eel h2{font-size:23px;line-height:1.5;border:0;background:none;color:var(--eel-ink);padding:0;margin:32px 0 16px;box-shadow:none}
+.eel h2::before,.eel h2::after{display:none}
+.eel .eel-nav,.eel .eel-topics,.eel .eel-pagination{display:flex;flex-wrap:wrap;gap:10px;margin:20px 0}
+.eel .eel-link{color:var(--eel-accent);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.eel .eel-nav a,.eel .eel-topics a,.eel .eel-pagination a{display:inline-block;border:1px solid var(--eel-line);border-radius:8px;padding:9px 14px;background:#fff;text-decoration:none;line-height:1.6}
+.eel .eel-topics a[aria-current=page]{background:var(--eel-ink);color:#fff;border-color:var(--eel-ink)}
+.eel a:hover{color:#0b4943;background:#edf5f0}
+.eel a:focus-visible{outline:3px solid #b96b2b;outline-offset:4px}
+.eel .eel-note{font-size:13px;color:#52645f;padding:12px 16px;border-left:3px solid #b5ccc1;background:#f3f7f4}
+.eel ul.eel-cards{list-style:none;padding:0;margin:18px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.eel ul.eel-cards>li{margin:0;padding:18px;border:1px solid var(--eel-line);border-radius:10px;background:#fff;list-style:none}
+.eel ul.eel-cards>li::before{display:none}
+.eel .eel-cards a{display:block;font-size:16px;line-height:1.7}
+.eel .eel-date{display:block;font-size:12px;color:#596a65;margin-top:14px}
+.eel .eel-steps{padding-left:24px;margin:20px 0}
+.eel .eel-steps li{padding:8px 0 12px 5px}
+.eel .eel-steps p{margin:5px 0}
+.eel-next{border-top:2px solid var(--eel-line);padding-top:10px}
+.eel-home{max-width:960px;margin:24px auto;padding:24px;background:#edf5f0;border:1px solid var(--eel-line);border-radius:12px}
+.eel-home strong{font-size:20px}
+@media(max-width:600px){.eel-home{margin:16px;padding:18px}.eel .eel-nav a{flex:1 1 180px;text-align:center}.eel ul.eel-cards{grid-template-columns:1fr}}

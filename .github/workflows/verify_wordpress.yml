@@ -1,0 +1,38 @@
+name: Verify WordPress learning navigation
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'wordpress/**'
+      - '.github/workflows/verify_wordpress.yml'
+permissions:
+  contents: read
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: test-only-password
+          MARIADB_DATABASE: wordpress
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax and browser event tests
+        run: |
+          php -l wordpress/econenglish-learning/econenglish-learning.php
+          node --test wordpress/tests/learning.test.cjs
+      - name: Install isolated WordPress and verify plugin
+        run: |
+          curl --fail --silent --show-error -L https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar
+          mkdir /tmp/eel-wordpress
+          php /tmp/wp-cli.phar core download --path=/tmp/eel-wordpress
+          php /tmp/wp-cli.phar config create --path=/tmp/eel-wordpress --dbname=wordpress --dbuser=root --dbpass=test-only-password --dbhost=127.0.0.1:3306
+          php /tmp/wp-cli.phar core install --path=/tmp/eel-wordpress --url=http://localhost:8888 --title=Test --admin_user=testadmin --admin_password=test-only-password --admin_email=test@example.org --skip-email
+          cp -r wordpress/econenglish-learning /tmp/eel-wordpress/wp-content/plugins/
+          php /tmp/wp-cli.phar plugin activate econenglish-learning --path=/tmp/eel-wordpress
+          php /tmp/wp-cli.phar eval-file "$GITHUB_WORKSPACE/wordpress/tests/integration.php" --path=/tmp/eel-wordpress
