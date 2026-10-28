@@ -7,10 +7,10 @@ const source = fs.readFileSync('wordpress/econenglish-learning/assets/learning.j
 function fixture({admin = false, tag = true, iframeOnly = false} = {}) {
   const calls = [];
   const handlers = {};
-  const audioEvents = {};
   const details = [];
-  const audio = {addEventListener: (name, fn) => { audioEvents[name] = fn; }};
-  const article = {querySelectorAll: selector => selector === 'audio' ? (iframeOnly ? [] : [audio]) : details};
+  const audio = {tagName: 'AUDIO'};
+  const players = new Set(iframeOnly ? [] : [audio]);
+  const article = {contains: element => players.has(element), querySelectorAll: () => details};
   const lesson = {dataset: {eelPage: 'lesson', eelLesson: '42'}, closest: () => article};
   const document = {
     querySelector: selector => selector === '[data-eel-page="lesson"]' ? lesson : null,
@@ -25,12 +25,13 @@ function fixture({admin = false, tag = true, iframeOnly = false} = {}) {
   }
   const answer = detail('Listening Answersを見る');
   const vocab = detail('日本語の意味を見る');
-  vm.runInNewContext(source, {window, document, Set});
-  return {calls, handlers, audioEvents, answer, vocab};
+  vm.runInNewContext(source, {window, document, Set, WeakSet});
+  return {calls, handlers, audio, players, answer, vocab};
 }
 test('play and completion counted once per player per page', () => {
   const f = fixture();
-  f.audioEvents.play(); f.audioEvents.play(); f.audioEvents.ended(); f.audioEvents.ended();
+  f.handlers.play({target: f.audio}); f.handlers.play({target: f.audio});
+  f.handlers.ended({target: f.audio}); f.handlers.ended({target: f.audio});
   assert.deepEqual(f.calls.map(c => c[1]), ['lesson_audio_start', 'lesson_audio_complete']);
   assert.equal(f.calls[0][2].lesson_id, '42');
   assert.equal(f.calls[0][2].send_to, 'G-TEST');
@@ -43,7 +44,7 @@ test('only opened answers count, once, not vocabulary reveals', () => {
 });
 test('admin and unavailable tag do not emit or install a tracker', () => {
   for (const options of [{admin: true}, {tag: false}]) {
-    const f = fixture(options); f.audioEvents.play();
+    const f = fixture(options); f.handlers.play({target: f.audio});
     assert.equal(f.calls.length, 0);
   }
 });
@@ -56,6 +57,16 @@ test('related link sends IDs, no user text or destination URLs', () => {
 });
 test('iframe does not fabricate playback events', () => {
   const f = fixture({iframeOnly: true});
-  assert.deepEqual(Object.keys(f.audioEvents), []);
+  f.handlers.play({target: {tagName: 'IFRAME'}});
+  f.handlers.play({target: f.audio});
   assert.equal(f.calls.length, 0);
+});
+test('media capture includes players inserted after setup and ignores unrelated audio', () => {
+  const f = fixture();
+  const later = {tagName: 'AUDIO'};
+  f.handlers.play({target: later});
+  assert.equal(f.calls.length, 0);
+  f.players.add(later);
+  f.handlers.play({target: later});
+  assert.equal(f.calls[0][1], 'lesson_audio_start');
 });

@@ -29,16 +29,21 @@
 
   if (lesson) {
     const article = lesson.closest('article') || lesson.parentElement;
-    article.querySelectorAll('audio').forEach(function (audio, index) {
-      audio.addEventListener('play', function () {
-        const key = 'play:' + index;
-        if (!seen.has(key)) { seen.add(key); send('lesson_audio_start', {player_type: 'html_audio'}); }
-      });
-      audio.addEventListener('ended', function () {
-        const key = 'end:' + index;
-        if (!seen.has(key)) { seen.add(key); send('lesson_audio_complete', {player_type: 'html_audio'}); }
-      });
-    });
+    const started = new WeakSet();
+    const finished = new WeakSet();
+    // Media events do not bubble. Capture also covers players inserted/replaced later.
+    document.addEventListener('play', function (event) {
+      const audio = event.target;
+      if (!audio || audio.tagName !== 'AUDIO' || !article.contains(audio) || started.has(audio)) return;
+      started.add(audio);
+      send('lesson_audio_start', {player_type: 'html_audio'});
+    }, true);
+    document.addEventListener('ended', function (event) {
+      const audio = event.target;
+      if (!audio || audio.tagName !== 'AUDIO' || !article.contains(audio) || finished.has(audio)) return;
+      finished.add(audio);
+      send('lesson_audio_complete', {player_type: 'html_audio'});
+    }, true);
     article.querySelectorAll('details').forEach(function (detail, index) {
       const summary = detail.querySelector('summary');
       if (!summary || !/Answers|解答|答え/i.test(summary.textContent)) return;
