@@ -18,6 +18,9 @@ eel_check(in_array('finance', wp_get_object_terms($finance, 'econ_topic', array(
 eel_check(!in_array('prices', wp_get_object_terms($business, 'econ_topic', array('fields' => 'slugs')), true), 'vocabulary boilerplate does not affect topic');
 eel_check(Econenglish_Learning::classify('A chipmaker story', '<h2>Script</h2>Carbon emissions fall.<h2>Vocabulary</h2>') === array('energy'), 'script-only matching retains strongest topic');
 eel_check(Econenglish_Learning::classify('A chair is moved', '') === array('society'), 'AI must match a whole word');
+eel_check(Econenglish_Learning::classify('Israeli forces deploy snipers, tear gas, live fire in Nablus raid', '') === array('society'), 'tear gas is not energy');
+eel_check(Econenglish_Learning::classify('Musk firms sue Apple and OpenAI', '') === array('business'), 'technology companies classified from headline');
+eel_check(Econenglish_Learning::classify('Australian households living too large', '') === array('prices'), 'plural households classified as daily life');
 $_GET = array('lesson_topic' => 'prices');
 $html = Econenglish_Learning::library();
 eel_check(strpos($html, 'Inflation and wages rise') !== false && strpos($html, 'Royal Mail acquisition') === false, 'topic filter excludes unrelated lessons');

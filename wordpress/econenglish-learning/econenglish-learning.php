@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Econenglish Learning
  * Description: 学習ガイド、テーマ別教材一覧、次の教材と学習行動の計測。
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Econenglish
@@ -10,17 +10,17 @@
 if (!defined('ABSPATH')) { exit; }
 
 final class Econenglish_Learning {
-    const VERSION = '1.0.0';
+    const VERSION = '1.0.1';
     const TAX = 'econ_topic';
 
     public static function topics() {
         return array(
-            'prices' => array('物価・暮らし', '物価、賃金、消費など、身近な経済の英語を学びます。', 'inflation|deflation|prices?|wages?|salar(?:y|ies)|cost of living|consumer|household|food security|物価|インフレ|賃金|消費|食料'),
+            'prices' => array('物価・暮らし', '物価、賃金、消費など、身近な経済の英語を学びます。', 'inflation|deflation|prices?|wages?|salar(?:y|ies)|cost of living|consumers?|households?|housing|food security|物価|インフレ|賃金|消費|食料'),
             'finance' => array('金利・為替・市場', '金利、通貨、株式市場のニュースで使う表現を学びます。', 'interest rates?|central banks?|federal reserve|bank of japan|currenc(?:y|ies)|yuan|yen|dollar|stocks?|shares?|bonds?|markets?|gold|金利|為替|中央銀行|円安|株価|金融'),
-            'business' => array('企業・テクノロジー', '企業の動き、AI、仕事に関するニュースを読み解きます。', 'compan(?:y|ies)|business|billionaire|acqui(?:re|sition)|merger|royal mail|tech(?:nology)?|artificial intelligence|AI|chips?|semiconductor|data cent(?:er|re)|cyberattack|企業|買収|半導体|人工知能|サイバー'),
+            'business' => array('企業・テクノロジー', '企業の動き、AI、仕事に関するニュースを読み解きます。', 'compan(?:y|ies)|business|firms?|billionaire|acqui(?:re|sition)|merger|royal mail|tech(?:nology)?|artificial intelligence|AI|OpenAI|Apple|Musk|Micron|Microsoft|Google|Amazon|Alibaba|Toyota|NTT|Samsung|TSMC|Tesla|Dreame|robots?|smartphones?|electric cars?|innovations?|medical|chips?|semiconductors?|data cent(?:er|re)|cyberattacks?|企業|買収|半導体|人工知能|サイバー'),
             'trade' => array('貿易・世界経済', '輸出入、関税、経済成長を英語で理解します。', 'trade|tariffs?|exports?|imports?|GDP|growth|IMF|econom(?:y|ies|ic)|貿易|関税|輸出|輸入|成長|世界経済'),
-            'energy' => array('環境・エネルギー', 'エネルギーや気候変動と経済のつながりを学びます。', 'energy|oil|gas|climate|carbon|wildfires?|renewable|emissions?|環境|エネルギー|石油|気候|炭素|山火事'),
-            'society' => array('社会・国際情勢', '政策や国際情勢を伝えるニュースの英語に触れます。', 'policy|government|election|protests?|president|minister|war|military|security|政治|政策|政府|選挙|抗議|国際情勢'),
+            'energy' => array('環境・エネルギー', 'エネルギーや気候変動と経済のつながりを学びます。', 'energy|oil|natural gas|LNG|wind farms?|climate|carbon|wildfires?|renewable|emissions?|環境|エネルギー|石油|気候|炭素|山火事'),
+            'society' => array('社会・国際情勢', '政策や国際情勢を伝えるニュースの英語に触れます。', 'policy|government|election|protests?|president|minister|war|military|security|raids?|snipers?|tear gas|政治|政策|政府|選挙|抗議|国際情勢'),
         );
     }
 
@@ -143,8 +143,10 @@ final class Econenglish_Learning {
         foreach ($posts as $post) {
             $terms = get_the_terms($post->ID, self::TAX);
             $labels = $terms && !is_wp_error($terms) ? wp_list_pluck($terms, 'name') : array();
+            $title = preg_replace('/^(?:英語ニュース教材[：:]\s*|【Asia Business English】\s*)/u', '', get_the_title($post));
+            $title = preg_replace('/（(?:Intermediate\s*レベル|B1[–—-]B2)）$/u', '', $title);
             $html .= '<li><span class="eel-kicker">' . esc_html(implode(' / ', $labels)) . '</span>'
-                . self::link(set_url_scheme(get_permalink($post), 'https'), get_the_title($post), $event, 'data-eel-target="' . (int) $post->ID . '"')
+                . self::link(set_url_scheme(get_permalink($post), 'https'), $title, $event, 'data-eel-target="' . (int) $post->ID . '"')
                 . '<span class="eel-date">教材公開 ' . esc_html(get_the_date('Y/m/d', $post)) . ' · 音声・スクリプト・クイズ</span></li>';
         }
         return $html . '</ul>';
@@ -258,12 +260,20 @@ final class Econenglish_Learning {
         wp_nonce_field('econ_index');
         echo '<input type="hidden" name="action" value="econ_index">';
         submit_button('次の60件を分類');
+        echo '</form><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('econ_index');
+        echo '<input type="hidden" name="action" value="econ_index"><input type="hidden" name="restart" value="1">';
+        submit_button('全教材を再分類', 'secondary');
         echo '</form><p>プラグインを停止すると追加ナビ・計測とガイドの表示差し替えが停止します。元のガイド本文は変更していません。</p></div>';
     }
 
     public static function admin_index() {
         if (!current_user_can('manage_options')) { wp_die('権限がありません'); }
         check_admin_referer('econ_index');
+        if (isset($_POST['restart']) && $_POST['restart'] === '1') {
+            update_option('econ_index_queue', get_posts(array('post_type' => 'post', 'post_status' => 'publish',
+                'numberposts' => -1, 'fields' => 'ids', 'orderby' => 'ID', 'order' => 'ASC')), false);
+        }
         self::index_batch();
         wp_safe_redirect(admin_url('tools.php?page=econenglish-learning'));
         exit;
