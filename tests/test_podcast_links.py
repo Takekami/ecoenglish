@@ -18,7 +18,7 @@ class PodcastLinksTests(unittest.TestCase):
         self.assertEqual(['1469'], params['p'])
         self.assertEqual(['spreaker'], params['utm_source'])
         self.assertEqual(['123'], params['utm_content'])
-        self.assertFalse(urlsplit(link).fragment)
+        self.assertEqual('eel-start', urlsplit(link).fragment)
         with self.assertRaises(ValueError):
             tracked_lesson_url('javascript:alert(1)', 123)
 

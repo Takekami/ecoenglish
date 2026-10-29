@@ -25,7 +25,8 @@
     if (!link) return;
     send(link.dataset.eelEvent, {
       target_lesson_id: link.dataset.eelTarget || '0',
-      lesson_topic: link.dataset.eelTopic || 'all'
+      lesson_topic: link.dataset.eelTopic || 'all',
+      study_step: ['audio', 'script', 'expression', 'listening'].includes(link.dataset.eelStep) ? link.dataset.eelStep : 'other'
     });
   });
 
@@ -33,6 +34,7 @@
     const data = event.detail || {};
     if (data.name === 'lesson_mode_change' && ['full', 'listening'].includes(data.mode)) send(data.name, {study_mode: data.mode});
     if (data.name === 'lesson_mark_complete' && ['marked', 'cleared'].includes(data.action)) send(data.name, {completion_action: data.action});
+    if (data.name === 'expression_repeat_toggle' && ['enabled', 'disabled'].includes(data.action)) send(data.name, {repeat_action: data.action});
   });
 
   if (weekly) weekly.querySelectorAll('[data-eel-weekly-answer]').forEach(function (detail, index) {
@@ -52,13 +54,13 @@
       const audio = event.target;
       if (!audio || audio.tagName !== 'AUDIO' || !article.contains(audio) || started.has(audio)) return;
       started.add(audio);
-      send('lesson_audio_start', {player_type: 'html_audio'});
+      send(audio.dataset && audio.dataset.eelExpressionAudio === 'sentence' ? 'expression_audio_start' : 'lesson_audio_start', {player_type: 'html_audio'});
     }, true);
     document.addEventListener('ended', function (event) {
       const audio = event.target;
       if (!audio || audio.tagName !== 'AUDIO' || !article.contains(audio) || finished.has(audio)) return;
       finished.add(audio);
-      send('lesson_audio_complete', {player_type: 'html_audio'});
+      send(audio.dataset && audio.dataset.eelExpressionAudio === 'sentence' ? 'expression_audio_complete' : 'lesson_audio_complete', {player_type: 'html_audio'});
     }, true);
     article.querySelectorAll('details').forEach(function (detail, index) {
       const summary = detail.querySelector('summary');

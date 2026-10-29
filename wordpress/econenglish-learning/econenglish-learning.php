@@ -2,16 +2,17 @@
 /**
  * Plugin Name: Econenglish Learning
  * Description: 学習ガイド、テーマ別教材一覧、次の教材と学習行動の計測。
- * Version: 1.1.1
+ * Version: 1.2.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Econenglish
  */
 if (!defined('ABSPATH')) { exit; }
 require_once __DIR__ . '/growth.php';
+require_once __DIR__ . '/expressions.php';
 
 final class Econenglish_Learning {
-    const VERSION = '1.1.1';
+    const VERSION = '1.2.0';
     const TAX = 'econ_topic';
 
     public static function topics() {
@@ -232,12 +233,16 @@ final class Econenglish_Learning {
             $related = self::lesson_query($args)->posts;
             $heading = '次に学ぶ教材';
         }
-        $intro = '<div class="eel" data-eel-page="lesson" data-eel-lesson="' . (int) $post->ID . '">' . self::nav()
-            . '<p class="eel-note">ニュースは教材公開時点の内容です。まず音声を聞き、クイズに答えてから英文を確認してみましょう。</p>'
-            . Econenglish_Growth::controls() . '</div>';
+        $expression = Econenglish_Expressions::for_post($post);
+        $intro = '<div class="eel eel-lesson-start" id="eel-start" data-eel-page="lesson" data-eel-lesson="' . (int) $post->ID . '">'
+            . '<p class="eel-learning-title"><strong>この回の学習</strong></p><p>使いたいところから始められます。</p>'
+            . Econenglish_Growth::lesson_navigation($content, (bool) $expression)
+            . '<details class="eel-study-tools"><summary>聞く・解くモード／学習済みの記録</summary>' . Econenglish_Growth::controls() . '</details>'
+            . '<details class="eel-other-tools"><summary>教材一覧・学習ガイド</summary>' . self::nav() . '</details>'
+            . '<p class="eel-note">ニュースは教材公開時点の内容です。</p></div>';
         $next = '<section class="eel eel-next" aria-label="次に学ぶ教材"><h2>' . esc_html($heading) . '</h2>'
             . self::cards($related, 'related_lesson_click') . self::link(self::page_url('library'), 'ほかのテーマも探す', 'library_click') . '</section>';
-        return $intro . Econenglish_Growth::study_content($content) . $next;
+        return $intro . Econenglish_Growth::study_content($content, Econenglish_Expressions::render($expression)) . $next;
     }
 
     public static function assets() {

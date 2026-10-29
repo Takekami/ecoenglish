@@ -105,22 +105,39 @@ final class Econenglish_Growth {
         $result = array();
         foreach ($pieces as $part) {
             $type = preg_match('~^<h2\b[^>]*>.*?</h2>~is', $part, $m) ? self::section_type($m[0]) : '';
+            if (!$type && preg_match('/<audio\b|<iframe[^>]+spreaker\.com/i', $part)) { $type = 'audio'; }
             $result[] = array('type' => $type, 'html' => $part);
         }
         return $result;
     }
 
-    public static function study_content($content) {
+    public static function study_content($content, $expressions = '') {
         $html = '';
         $used = array();
+        $inserted = false;
         foreach (self::sections($content) as $part) {
             $type = $part['type'];
+            if ($expressions && !$inserted && $type === 'vocabulary') { $html .= $expressions; $inserted = true; }
             if (!$type || isset($used[$type])) { $html .= $part['html']; continue; }
             $used[$type] = true;
             $html .= '<section class="eel-lesson-section" id="eel-' . esc_attr($type)
                 . '" data-eel-section="' . esc_attr($type) . '">' . $part['html'] . '</section>';
         }
-        return $html;
+        return $html . (!$inserted ? $expressions : '');
+    }
+
+    public static function lesson_navigation($content, $has_expression) {
+        $available = array();
+        foreach (self::sections($content) as $part) { $available[$part['type']] = true; }
+        $links = array('audio' => array('eel-audio', '音声を聞く'), 'script' => array('eel-script', '全文を読む'),
+            'expression' => array($has_expression ? 'eel-expressions' : 'eel-vocabulary', $has_expression ? '表現を復習する' : '単語・表現を復習する'),
+            'listening' => array('eel-listening', 'クイズに挑戦する'));
+        $html = '<nav class="eel-lesson-actions" aria-label="この回の学習メニュー">';
+        foreach ($links as $step => $link) {
+            if ($step === 'expression' ? !$has_expression && empty($available['vocabulary']) : empty($available[$step])) { continue; }
+            $html .= '<a href="#' . esc_attr($link[0]) . '" data-eel-event="lesson_step_click" data-eel-step="' . esc_attr($step) . '">' . esc_html($link[1]) . '</a>';
+        }
+        return $html . '</nav>';
     }
 
     public static function controls() {

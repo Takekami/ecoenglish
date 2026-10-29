@@ -73,3 +73,38 @@ test('missing sections retain full content and completion instead of exposing br
   assert.equal(dom.window.document.querySelector('.eel-mode-buttons').hidden,true);
   assert.match(dom.window.document.body.textContent,/Original/);
 });
+
+test('expression destination reveals itself after listening mode, including fragment navigation', () => {
+  const {d,dom}=page();
+  const section=d.createElement('section');section.id='eel-expressions';section.dataset.eelSection='expressions';
+  const link=d.createElement('a');link.href='#eel-expressions';link.textContent='表現を復習する';
+  d.querySelector('article').append(section,link);
+  setup(d,dom.window);
+  d.querySelector('[data-eel-mode=listening]').click();
+  assert.equal(section.hidden,true);
+  link.click();
+  assert.equal(section.hidden,false);
+  d.querySelector('[data-eel-mode=listening]').click();
+  dom.window.location.hash='#eel-expressions';
+  dom.window.dispatchEvent(new dom.window.HashChangeEvent('hashchange'));
+  assert.equal(section.hidden,false);
+});
+
+test('sentence repeat is reversible and does not automatically start playback', () => {
+  const dom=new JSDOM('<article><div data-eel-page="lesson"></div><audio id="sentence" data-eel-expression-audio="sentence"></audio><button data-eel-repeat aria-controls="sentence" aria-pressed="false" hidden></button></article>',{url:'https://econenglish.jp/'});
+  const {document:d}=dom.window;
+  setup(d,dom.window);
+  const button=d.querySelector('button'),audio=d.querySelector('audio');
+  assert.equal(button.hidden,false);
+  button.click();assert.equal(audio.loop,true);assert.equal(audio.paused,true);
+  assert.equal(button.getAttribute('aria-pressed'),'true');
+  button.click();assert.equal(audio.loop,false);
+});
+
+test('long theme TOC becomes an optional disclosure without losing its links', () => {
+  const dom=new JSDOM('<article><div data-eel-page="lesson"></div><div id="rtoc-mokuji-wrapper"><a href="#script">Script</a></div><h2 id="script">Script</h2></article>',{url:'https://econenglish.jp/'});
+  setup(dom.window.document,dom.window);
+  const holder=dom.window.document.querySelector('[data-eel-toc]');
+  assert.equal(holder.open,false);
+  assert.equal(holder.querySelector('a').getAttribute('href'),'#script');
+});

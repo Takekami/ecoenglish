@@ -5,6 +5,32 @@ Package only `wordpress/econenglish-learning/` into `econenglish-learning.zip`, 
 through WordPress Plugins > Add Plugin > Upload, and activate. No credentials are
 bundled. No new third-party service or tracking tag is installed.
 
+## Version 1.2 shared lesson entries
+
+- Every lesson has a common `#eel-start` menu for full audio, full script,
+  expression/vocabulary review and the existing quiz. Only available destinations
+  are linked. The menu is visible without JS. No flow is labeled as exclusive to
+  Podcast or short-video visitors.
+- Study-mode/completion controls, site-wide learning links and the theme's long
+  TOC are optional disclosures. Stored original lesson content is preserved.
+- Post 1931 has a reviewed `#eel-expressions` section after the full script. It
+  quotes the exact source sentence, gives its Japanese translation, includes a
+  same-origin MP3 of that one sentence with optional looping, explains a related
+  expression separately, and links to the actual issuer usage reference.
+  The quote must still occur in that post's Script or the card is not displayed.
+  Other lessons link to their existing Vocabulary section; no unreviewed or empty
+  expression cards are fabricated. New reviewed cards currently require updating
+  the curated data in `expressions.php`; daily automatic import is not enabled.
+- Sentence audio is synthesized learning audio, explicitly labeled. It is not a
+  cut aligned to the original episode. No new TTS request was made for this
+  rollout: the already approved preview's exact sentence recording was encoded
+  as an 84KB MP3 and bundled with the plugin.
+- `expression_audio_start/complete` are separate from full-episode audio events;
+  repeat toggles and common-menu clicks use bounded enumerated parameters.
+- Podcast link generation now targets `#eel-start`; the local Shorts manifest
+  converter targets `#eel-expressions`. Lambda code/link changes require their
+  separate deployment and are not activated by a WordPress plugin upload.
+
 ## Version 1.1 growth features
 
 - A study toolbar offers listening/questions first, with reversible hiding of the

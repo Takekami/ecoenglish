@@ -44,6 +44,30 @@
     document.dispatchEvent(new window.CustomEvent('eel:learning', {detail: Object.assign({name}, data)}));
   }
 
+  // A common learning menu replaces the need to scan a long expanded theme TOC.
+  const toc = article && article.querySelector('#rtoc-mokuji-wrapper');
+  if (toc && !toc.closest('[data-eel-toc]')) {
+    const holder = document.createElement('details');
+    holder.dataset.eelToc = '';
+    holder.className = 'eel-compact-toc';
+    const summary = document.createElement('summary');
+    summary.textContent = 'この回の詳しい目次';
+    toc.before(holder);
+    holder.append(summary, toc);
+  }
+
+  if (article) article.querySelectorAll('[data-eel-repeat]').forEach(button => {
+    const audio = document.getElementById(button.getAttribute('aria-controls'));
+    if (!audio || audio.tagName !== 'AUDIO' || !article.contains(audio)) return;
+    button.hidden = false;
+    button.addEventListener('click', () => {
+      audio.loop = !audio.loop;
+      button.setAttribute('aria-pressed', String(audio.loop));
+      button.textContent = audio.loop ? '繰り返し：オン' : '繰り返し：オフ';
+      signal('expression_repeat_toggle', {action: audio.loop ? 'enabled' : 'disabled'});
+    });
+  });
+
   function mode(value) {
     sections.forEach(section => {
       section.hidden = value === 'listening' && !['audio', 'listening'].includes(section.dataset.eelSection);
@@ -75,6 +99,15 @@
           if (link.hasAttribute('data-eel-reveal') || (target && target.closest('[data-eel-section][hidden]'))) mode('full');
         } catch (_) { /* A malformed third-party fragment should not affect navigation. */ }
       }, true);
+      window.addEventListener('hashchange', () => {
+        try {
+          const target = document.getElementById(decodeURIComponent(window.location.hash.slice(1)));
+          if (target && target.closest('[data-eel-section][hidden]')) {
+            mode('full');
+            if (typeof target.scrollIntoView === 'function') target.scrollIntoView();
+          }
+        } catch (_) { /* Ignore malformed external fragments. */ }
+      });
     } else {
       controls.querySelector('.eel-mode-buttons').hidden = true;
       controls.querySelector('nav').hidden = true;

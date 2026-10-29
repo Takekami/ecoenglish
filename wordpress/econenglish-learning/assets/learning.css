@@ -36,3 +36,18 @@
 .eel table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
 .eel th,.eel td{border:1px solid var(--eel-line);padding:12px;vertical-align:top;text-align:left;overflow-wrap:anywhere}
 .eel th{background:#f3f7f4}.eel table th:first-child{width:32%}
+.eel-lesson-start .eel-learning-title{font-size:21px;margin:0 0 4px}.eel-lesson-start>p{margin:8px 0}
+.eel .eel-lesson-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:18px 0}
+.eel .eel-lesson-actions a{display:flex;align-items:center;justify-content:center;text-align:center;border:1px solid var(--eel-line);border-radius:8px;padding:12px 9px;background:#fff;color:var(--eel-accent);font-size:15px;font-weight:700;line-height:1.5;text-decoration:none;min-height:48px}
+.eel .eel-lesson-actions a:focus-visible{outline:3px solid #b96b2b;outline-offset:3px}
+.eel-study-tools,.eel-other-tools,.eel-compact-toc{margin:12px 0;border:1px solid #dce8e2;border-radius:8px;padding:12px 14px}
+.eel-study-tools>summary,.eel-other-tools>summary,.eel-compact-toc>summary,.eel-expressions summary{cursor:pointer;line-height:1.7;font-weight:700;color:#173b3a}
+.eel-compact-toc #rtoc-mokuji-wrapper{margin:15px 0}.eel-lesson-section,#eel-start{scroll-margin-top:20px}
+.eel-expressions{padding:22px 20px;border:1px solid #dce8e2;border-radius:10px;background:#f8faf8}
+.eel-expressions .eel-expression-term{font-size:clamp(22px,5vw,30px);font-weight:800;color:#173b3a;line-height:1.5;margin:18px 0}
+.eel-expressions blockquote{margin:20px 0;padding:12px 16px;border-left:3px solid #14665e;background:#fff;font-size:18px;line-height:1.8}
+.eel-expressions mark{background:#dceee3;color:#173b3a;padding:1px 2px}
+.eel-expressions audio{display:block;width:100%;margin:12px 0}.eel-expressions label{font-weight:700}
+.eel-expressions button{font:inherit;cursor:pointer;padding:9px 14px;border:1px solid #b5ccc1;border-radius:7px;background:#fff;color:#14665e}
+.eel-expressions button[aria-pressed=true]{background:#173b3a;color:#fff}.eel-expressions [hidden]{display:none!important}
+.eel-expressions details{padding:12px 0;border-bottom:1px solid #dce8e2}.eel-expressions h2{margin-top:0}

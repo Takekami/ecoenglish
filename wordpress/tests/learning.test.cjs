@@ -70,3 +70,10 @@ test('media capture includes players inserted after setup and ignores unrelated 
   f.handlers.play({target: later});
   assert.equal(f.calls[0][1], 'lesson_audio_start');
 });
+test('sentence playback is measured separately from a full Podcast listen', () => {
+  const f=fixture();
+  const sentence={tagName:'AUDIO',dataset:{eelExpressionAudio:'sentence'}};
+  f.players.add(sentence);
+  f.handlers.play({target:sentence});f.handlers.ended({target:sentence});
+  assert.deepEqual(f.calls.map(c=>c[1]),['expression_audio_start','expression_audio_complete']);
+});

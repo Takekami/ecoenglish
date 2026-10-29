@@ -9,7 +9,7 @@ def tracked_lesson_url(url: str, episode_id, source: str = "spreaker") -> str:
     query = [(key, value) for key, value in parse_qsl(parts.query) if not key.startswith("utm_")]
     query += [("utm_source", source), ("utm_medium", "podcast"),
               ("utm_campaign", "news_lessons"), ("utm_content", str(episode_id))]
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), "eel-start"))
 
 
 def episode_description(title: str, lesson_url: str, episode_id, source="spreaker") -> str:

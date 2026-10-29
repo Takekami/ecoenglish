@@ -51,6 +51,21 @@ eel_check($ids === array_map(function ($key) { return (int) get_option('econ_' .
 $wrapped = Econenglish_Growth::study_content('<html><head><link href="bootstrap.css"></head><body><h2>Audio</h2><audio></audio><h2>Script</h2><p>Unchanged script.</p><h2>Listening Questions</h2><ol><li>Question</li></ol></body></html>');
 eel_check(strpos($wrapped, 'id="eel-script"') !== false && strpos($wrapped, 'Unchanged script.') !== false, 'study sections retain original content');
 eel_check(strpos($wrapped, '<html>') === false && strpos($wrapped, 'bootstrap.css') === false, 'legacy document wrappers removed at render time');
+$source_quote = 'In northern Japan, several banks have announced plans to enter merger discussions.';
+$expression_fixture = (object) array('ID' => 1931, 'post_content' => '<h2>Audio</h2><audio></audio><h2>Script</h2><p>' . $source_quote . '</p><h2>Vocabulary</h2>');
+$expression = Econenglish_Expressions::for_post($expression_fixture);
+eel_check($expression && $expression['term'] === 'enter merger discussions', 'reviewed expression requires the exact source quote');
+$expression_fixture->post_content = str_replace('enter merger discussions', 'begin negotiations', $expression_fixture->post_content);
+eel_check(Econenglish_Expressions::for_post($expression_fixture) === null, 'edited source does not retain an invalid expression quote');
+$box = Econenglish_Expressions::render($expression);
+eel_check(strpos($box, 'id="eel-expressions"') !== false && strpos($box, '1931-sentence.mp3') !== false, 'expression includes a stable anchor and sentence audio');
+$navigation = Econenglish_Growth::lesson_navigation('<h2>Audio</h2><audio></audio><h2>Script</h2><h2>Vocabulary</h2><h2>Listening Questions</h2>', true);
+foreach (array('eel-audio', 'eel-script', 'eel-expressions', 'eel-listening') as $target) {
+    eel_check(strpos($navigation, '#' . $target) !== false, 'common navigation targets ' . $target);
+}
+eel_check(strpos(Econenglish_Growth::lesson_navigation('<h2>Script</h2><h2>Vocabulary</h2>', false), '#eel-vocabulary') !== false, 'lessons without a reviewed expression use existing vocabulary');
+$with_expression = Econenglish_Growth::study_content('<h2>Script</h2><p>Source</p><h2>Vocabulary</h2><p>Words</p>', $box);
+eel_check(strpos($with_expression, 'id="eel-script"') < strpos($with_expression, 'id="eel-expressions"') && strpos($with_expression, 'id="eel-expressions"') < strpos($with_expression, 'id="eel-vocabulary"'), 'expression follows the full script without interrupting the audio-first entry');
 $quiz_html = '<h2>Listening Questions</h2><ol><li>True/False: A company can invest.</li><li>Other question.</li></ol><details><summary>Listening Answers</summary><ol><li>True</li><li>b)</li></ol></details><h2>Reading Questions</h2>';
 eel_check(Econenglish_Growth::quiz($quiz_html) === array('question' => 'True/False: A company can invest.', 'answer' => 'True'), 'weekly copies question and answer exactly');
 eel_check(Econenglish_Growth::quiz(str_replace('<li>True</li>', '<li>b)</li>', $quiz_html)) === null, 'weekly skips malformed answer instead of guessing');
