@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Econenglish Learning
  * Description: 学習ガイド、テーマ別教材一覧、次の教材と学習行動の計測。
- * Version: 1.1.0
+ * Version: 1.1.1
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Econenglish
@@ -11,7 +11,7 @@ if (!defined('ABSPATH')) { exit; }
 require_once __DIR__ . '/growth.php';
 
 final class Econenglish_Learning {
-    const VERSION = '1.1.0';
+    const VERSION = '1.1.1';
     const TAX = 'econ_topic';
 
     public static function topics() {

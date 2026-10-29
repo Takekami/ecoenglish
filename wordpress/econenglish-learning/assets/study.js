@@ -64,6 +64,7 @@
     const supported = ['audio', 'script', 'listening'].every(type => sections.some(s => s.dataset.eelSection === type));
     if (supported) {
       controls.querySelectorAll('[data-eel-mode]').forEach(button => button.addEventListener('click', () => mode(button.dataset.eelMode)));
+      // Capture before theme/TOC smooth-scroll handlers can stop propagation.
       document.addEventListener('click', event => {
         const link = event.target.closest('a[href]');
         if (!link) return;
@@ -73,7 +74,7 @@
           const target = document.getElementById(decodeURIComponent(url.hash.slice(1)));
           if (link.hasAttribute('data-eel-reveal') || (target && target.closest('[data-eel-section][hidden]'))) mode('full');
         } catch (_) { /* A malformed third-party fragment should not affect navigation. */ }
-      });
+      }, true);
     } else {
       controls.querySelector('.eel-mode-buttons').hidden = true;
       controls.querySelector('nav').hidden = true;

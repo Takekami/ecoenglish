@@ -42,6 +42,13 @@ test('both original table-of-contents links and reveal action restore hidden con
     assert.equal(d.querySelector('[data-eel-section=script]').hidden,false);
   }
 });
+test('theme smooth-scroll stopping propagation cannot keep a TOC destination hidden', () => {
+  const {d}=page();
+  d.querySelector('#toc').addEventListener('click', e=>e.stopPropagation());
+  d.querySelector('[data-eel-mode=listening]').click();
+  d.querySelector('#toc').click();
+  assert.equal(d.querySelector('[data-eel-section=script]').hidden,false);
+});
 test('completion persists locally, displays on cards, and can be undone', () => {
   const {d,dom,events}=page();
   d.querySelector('[data-eel-complete]').click();
