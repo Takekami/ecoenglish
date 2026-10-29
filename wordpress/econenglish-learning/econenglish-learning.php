@@ -2,15 +2,16 @@
 /**
  * Plugin Name: Econenglish Learning
  * Description: 学習ガイド、テーマ別教材一覧、次の教材と学習行動の計測。
- * Version: 1.0.2
+ * Version: 1.1.0
  * Requires at least: 6.4
  * Requires PHP: 7.4
  * Author: Econenglish
  */
 if (!defined('ABSPATH')) { exit; }
+require_once __DIR__ . '/growth.php';
 
 final class Econenglish_Learning {
-    const VERSION = '1.0.2';
+    const VERSION = '1.1.0';
     const TAX = 'econ_topic';
 
     public static function topics() {
@@ -109,6 +110,7 @@ final class Econenglish_Learning {
                 'numberposts' => -1, 'fields' => 'ids', 'orderby' => 'ID', 'order' => 'ASC')), false);
         }
         self::index_batch();
+        Econenglish_Growth::setup();
     }
 
     public static function index_batch() {
@@ -135,7 +137,8 @@ final class Econenglish_Learning {
     public static function nav() {
         return '<nav class="eel-nav" aria-label="教材の学習ナビ">'
             . self::link(self::page_url('guide'), '初めての方へ', 'guide_click')
-            . self::link(self::page_url('library'), 'テーマ別に教材を探す', 'library_click') . '</nav>';
+            . self::link(self::page_url('library'), 'テーマ別に教材を探す', 'library_click')
+            . self::link(self::page_url('weekly'), '今週の復習', 'weekly_click') . '</nav>';
     }
 
     public static function cards($posts, $event = 'lesson_select') {
@@ -205,7 +208,9 @@ final class Econenglish_Learning {
             . self::link(self::page_url('library'), 'テーマ別の教材一覧を見る', 'library_click')
             . '<h2>この教材について</h2><p>入門教材とネイティブ向けニュースの間をつなぐ学習材料として、海外ニュースをもとに英語教材を制作しています。AIを制作に使用し、内容の検証も行っていますが、誤りが残る可能性があります。</p>'
             . '<p>ニュースは教材公開時点の内容です。気になる情報は各記事末尾の出典も確認してください。誤りに気づいた場合は、お問い合わせからお知らせください。</p>'
-            . self::link(home_url('/contact/', 'https'), 'お問い合わせ', 'contact_click');
+            . self::link(home_url('/contact/', 'https'), 'お問い合わせ', 'contact_click')
+            . '<h2>学習を続けるヒント</h2>' . Econenglish_Growth::help_links()
+            . self::link(self::page_url('weekly'), '今週の復習に取り組む', 'weekly_click');
         return $html . '</div>';
     }
 
@@ -228,16 +233,18 @@ final class Econenglish_Learning {
             $heading = '次に学ぶ教材';
         }
         $intro = '<div class="eel" data-eel-page="lesson" data-eel-lesson="' . (int) $post->ID . '">' . self::nav()
-            . '<p class="eel-note">ニュースは教材公開時点の内容です。まず音声を聞き、英文を確認してからクイズに取り組んでみましょう。</p></div>';
+            . '<p class="eel-note">ニュースは教材公開時点の内容です。まず音声を聞き、クイズに答えてから英文を確認してみましょう。</p>'
+            . Econenglish_Growth::controls() . '</div>';
         $next = '<section class="eel eel-next" aria-label="次に学ぶ教材"><h2>' . esc_html($heading) . '</h2>'
             . self::cards($related, 'related_lesson_click') . self::link(self::page_url('library'), 'ほかのテーマも探す', 'library_click') . '</section>';
-        return $intro . $content . $next;
+        return $intro . Econenglish_Growth::study_content($content) . $next;
     }
 
     public static function assets() {
         if (is_feed() || is_admin()) { return; }
         wp_enqueue_style('econenglish-learning', set_url_scheme(plugins_url('assets/learning.css', __FILE__), 'https'), array(), self::VERSION);
         wp_enqueue_script('econenglish-learning', set_url_scheme(plugins_url('assets/learning.js', __FILE__), 'https'), array(), self::VERSION, true);
+        wp_enqueue_script('econenglish-study', set_url_scheme(plugins_url('assets/study.js', __FILE__), 'https'), array('econenglish-learning'), self::VERSION, true);
         wp_add_inline_script('econenglish-learning', 'window.eelConfig=' . wp_json_encode(array('admin' => current_user_can('edit_posts'), 'measurementId' => 'G-EMJ73ZY8ZW')) . ';', 'before');
     }
 
@@ -256,6 +263,11 @@ final class Econenglish_Learning {
         echo '<p>新しい教材は保存時に自動分類されます。教材テーマは投稿編集画面でも確認できます。</p><p>'
             . self::link(self::page_url('guide'), '学習ガイドを確認', 'admin_preview') . ' / '
             . self::link(self::page_url('library'), '教材一覧を確認', 'admin_preview') . '</p>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('econ_growth_setup');
+        echo '<input type="hidden" name="action" value="econ_growth_setup">';
+        submit_button('解説3本と週次復習ページを公開・確認');
+        echo '</form>';
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('econ_index');
         echo '<input type="hidden" name="action" value="econ_index">';
@@ -288,4 +300,7 @@ add_filter('the_content', array('Econenglish_Learning', 'content'), 20);
 add_action('admin_menu', array('Econenglish_Learning', 'admin_menu'));
 add_action('admin_post_econ_index', array('Econenglish_Learning', 'admin_index'));
 register_activation_hook(__FILE__, array('Econenglish_Learning', 'activate'));
-register_deactivation_hook(__FILE__, function () { wp_clear_scheduled_hook('econ_index_batch'); });
+register_deactivation_hook(__FILE__, function () {
+    wp_clear_scheduled_hook('econ_index_batch');
+    wp_clear_scheduled_hook('econ_weekly_refresh');
+});

@@ -13,7 +13,8 @@ from prompt_templates import get_prompt_for_level
 from content_quality import plain_text, source_text, parse_lesson, validate_lesson
 from wp_poster import post_to_wordpress
 from rss_generator import generate_rss, save_rss
-from spreaker_uploader import upload_episode_to_spreaker
+from spreaker_uploader import upload_episode_to_spreaker, update_episode_description
+from podcast_links import episode_description
 
 # ---------- Environment variables ----------
 OPENAI_API_KEY       = os.getenv("OPENAI_API_KEY")
@@ -37,7 +38,7 @@ openai.api_key = OPENAI_API_KEY
 client = openai.Client(api_key=OPENAI_API_KEY)
 
 # ---------- Constants ----------
-BLOG_URL = "https://econenglish.jp/category/english-learning/"
+BLOG_URL = "https://econenglish.jp/lesson-library/"
 LEVEL_LABEL = "B1–B2"
 RSS_FEED_TITLE = "Econenglish — Asia Business English (B1–B2)"
 RSS_FEED_DESCRIPTION = (
@@ -46,8 +47,8 @@ RSS_FEED_DESCRIPTION = (
 )
 RSS_AUTHOR = "Econenglish"
 SPREAKER_DESCRIPTION = (
-    "Daily Asia-Pacific business news, rewritten for intermediate English learners (B1–B2).\n\n"
-    "Full script, vocabulary, grammar notes, quizzes & Japanese commentary:\n"
+    "海外ニュースで学ぶ、中級者向けの英語音声教材です。\n\n"
+    "英文・単語・理解度クイズ付きの教材一覧：\n"
     f"{BLOG_URL}"
 )
 
@@ -283,6 +284,19 @@ def handler(event=None, context=None):
     else:
         _log(f"result=SUCCESS title={title!r} link={link} wordpress={wp_link}")
 
+    # Only point listeners at a lesson after WordPress confirms publication.
+    # A metadata failure must not trigger a duplicate episode through a handler retry.
+    episode_id = episode.get("episode_id") or episode.get("id")
+    if wp_link and episode_id:
+        try:
+            update_episode_description(episode_id, episode_description(
+                sections["Japanese Title"], wp_link, episode_id))
+            _log(f"podcast_lesson_link=UPDATED episode={episode_id}")
+        except Exception as exc:
+            _log(f"podcast_lesson_link=FAILED episode={episode_id} error={type(exc).__name__}")
+    elif wp_link:
+        _log("podcast_lesson_link=FAILED reason=MISSING_EPISODE_ID")
+
     # 6) RSS to generate and upload to S3 ----------------------------------------
     rss_xml = generate_rss(
         RSS_FEED_TITLE,
@@ -291,7 +305,8 @@ def handler(event=None, context=None):
         RSS_FEED_DESCRIPTION,
         [{
         "title": f"{title} | Asia Business English ({LEVEL_LABEL})",
-        "description": summary,
+        "description": episode_description(sections["Japanese Title"], wp_link,
+                                           episode_id or "latest", "podcast_rss") if wp_link else summary,
         "mp3_url": audio_url,
         "pub_date": datetime.datetime.utcnow(),
         }],

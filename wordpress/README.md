@@ -5,6 +5,41 @@ Package only `wordpress/econenglish-learning/` into `econenglish-learning.zip`, 
 through WordPress Plugins > Add Plugin > Upload, and activate. No credentials are
 bundled. No new third-party service or tracking tag is installed.
 
+## Version 1.1 growth features
+
+- A study toolbar offers listening/questions first, with reversible hiding of the
+  script, vocabulary, grammar, reading and Japanese commentary. Existing content
+  is not rewritten. Anchor/TOC links reveal a hidden destination before navigating.
+  Without JS, full content remains visible. Missing sections disable mode links.
+- A completion mark is stored only in this browser's localStorage under
+  `econenglish.completed.v1` (maximum 200 numeric post IDs). It is reversible,
+  is shown on lesson cards and is not an assessment or cross-device account.
+  Blocked storage displays a message while leaving learning features usable.
+- Tools > 教材ナビ > `解説3本と週次復習ページを公開・確認` idempotently creates
+  three original evergreen guides and `/weekly-review/`. Activation also creates
+  these pages. Unrelated pages with the same slug are never overwritten.
+- Weekly review uses the previous calendar week in the WordPress site timezone,
+  selects up to three published lessons and copies their first existing T/F
+  question and answer. Unsupported markup/answers are skipped, never guessed.
+  There is an explicit empty state. No new AI calls, email or audio publishing
+  occur. New weeks are computed on render; the page opts out of full page caching,
+  and a Monday 06:00 WP-Cron task also clears the existing cache. WP-Cron runs when
+  WordPress receives traffic, not as an exact-time scheduler.
+- New events: `lesson_mode_change`, `lesson_mark_complete`, `weekly_answer_open`,
+  `weekly_lesson_click`, `weekly_click`, `learning_guide_click`, `guide_lesson_click`.
+  These use the existing GA4 tag, and contain no written learner answers.
+- New articles: `/study-english-with-economic-news/`,
+  `/english-news-listening-practice/`, `/inflation-news-english-vocabulary/`.
+  Original content is in `learning-content.php`; examples are explicitly exercises.
+  The guides link to actual lessons, each other and primary reference sources.
+
+Tests: `NODE_PATH=/private/tmp/eel-js-test/node_modules node --test wordpress/tests/*.test.cjs`
+after installing `jsdom@26.1.0` into that temporary prefix. CI installs the pinned
+test dependency and verifies against isolated WordPress/MariaDB.
+
+On rollback, deactivate the plugin and move these shortcode pages to Trash or
+replace their content. Browser marks can be removed through site-data settings.
+
 ## Public behavior
 
 - Reuses the published `howtousethisblogandpodcast` post/page as the guide. Its saved

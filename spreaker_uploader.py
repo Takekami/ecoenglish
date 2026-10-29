@@ -38,6 +38,19 @@ def _get_auth_header() -> dict:
         token = _refresh_access_token()
     return {"Authorization": f"Bearer {token}"}
 
+
+def update_episode_description(episode_id, description: str) -> None:
+    """Update only metadata after the matching WordPress lesson is public."""
+    if not str(episode_id).isdigit():
+        raise ValueError("Invalid episode ID")
+    url = f"{API_BASE}/episodes/{episode_id}"
+    response = requests.post(url, headers=_get_auth_header(),
+                             data={"description": description}, timeout=20)
+    if response.status_code == 401:
+        response = requests.post(url, headers={"Authorization": f"Bearer {_refresh_access_token()}"},
+                                 data={"description": description}, timeout=20)
+    response.raise_for_status()
+
 # ── Episode Upload ───────────────────────────────────────────────────────────
 def upload_episode_to_spreaker(
     local_audio_path: str,

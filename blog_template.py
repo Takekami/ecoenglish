@@ -133,14 +133,9 @@ def build_blog_post_html(
             + markdown(clean_jp, extensions=["extra"])
         )
 
-    # 7) Build full HTML
+    # WordPress owns the document/head and styles; return a content fragment.
     html = (
-        "<html><head>"
-        '<meta charset="utf-8">'
-        '<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">'
-        "</head><body class='container my-4'>"
-
-        + (f"<p>{escape(introduction)}</p>" if introduction else "")
+        (f"<p>{escape(introduction)}</p>" if introduction else "")
         + "<h2>音声</h2>"
         f'<audio controls src="{audio_url}"></audio>'
 
@@ -156,6 +151,5 @@ def build_blog_post_html(
         + reading_html
         + jp_html
         + f'<p class="text-muted">Source: <a href="{url}">{url}</a></p>'
-        + "</body></html>"
     )
     return html.strip()

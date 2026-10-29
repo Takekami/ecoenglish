@@ -24,8 +24,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Syntax and browser event tests
         run: |
-          php -l wordpress/econenglish-learning/econenglish-learning.php
-          node --test wordpress/tests/learning.test.cjs
+          for file in wordpress/econenglish-learning/*.php wordpress/tests/*.php; do php -l "$file"; done
+          npm install --prefix /tmp/eel-js-test --ignore-scripts --no-audit --no-fund jsdom@26.1.0
+          NODE_PATH=/tmp/eel-js-test/node_modules node --test wordpress/tests/*.test.cjs
       - name: Install isolated WordPress and verify plugin
         run: |
           curl --fail --silent --show-error -L https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar

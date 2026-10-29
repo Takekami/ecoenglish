@@ -113,13 +113,16 @@ class PublishBoundaryTests(unittest.TestCase):
                 patch.object(main, "review_lesson", return_value=True), \
                 patch.object(main, "synthesize_speech", return_value="/tmp/test.mp3"), \
                 patch.object(main, "upload_to_s3"), \
-                patch.object(main, "upload_episode_to_spreaker", return_value={"stream_url": "https://example.com/audio.mp3"}), \
+                patch.object(main, "upload_episode_to_spreaker", return_value={"episode_id": 123, "stream_url": "https://example.com/audio.mp3"}), \
+                patch.object(main, "update_episode_description") as update_episode, \
                 patch.object(main, "save_rss"), \
                 patch.object(main, "post_to_wordpress", return_value="https://example.com/lesson") as wp:
             self.assertEqual(200, main.handler()["statusCode"])
             self.assertEqual(data["Japanese Title"], wp.call_args.args[0])
             self.assertEqual(data["Meta Description"], wp.call_args.kwargs["excerpt"])
             self.assertIn(data["Introduction"], wp.call_args.args[1])
+            self.assertEqual(123, update_episode.call_args.args[0])
+            self.assertIn('https://example.com/lesson?utm_source=spreaker', update_episode.call_args.args[1])
 
     def test_insufficient_source_never_calls_generation(self):
         main = self.main
@@ -131,6 +134,32 @@ class PublishBoundaryTests(unittest.TestCase):
             self.assertEqual(204, main.handler()["statusCode"])
             generate.assert_not_called()
             publish.assert_not_called()
+
+    def test_missing_wordpress_link_never_updates_podcast_and_metadata_failure_is_not_fatal(self):
+        main = self.main
+        data = lesson()
+        article = SimpleNamespace(title="News", summary="Facts", link="https://www.cnbc.com/story")
+        for wp_link in (None, "https://example.com/lesson"):
+            with self.subTest(wp_link=wp_link), \
+                    patch.object(main, "fetch_article", return_value=article), \
+                    patch.object(main, "source_text", return_value="source " * 150), \
+                    patch.object(main, "is_significant", return_value=(True, "yes")), \
+                    patch.object(main, "gpt", return_value=markdown(data)), \
+                    patch.object(main, "review_lesson", return_value=True), \
+                    patch.object(main, "synthesize_speech", return_value="/tmp/test.mp3"), \
+                    patch.object(main, "upload_to_s3"), \
+                    patch.object(main, "upload_episode_to_spreaker", return_value={"episode_id": 123, "stream_url": "https://example.com/audio.mp3"}), \
+                    patch.object(main, "update_episode_description", side_effect=TimeoutError) as update, \
+                    patch.object(main, "post_to_wordpress", return_value=wp_link), \
+                    patch.object(main, "save_rss") as rss:
+                self.assertEqual(200, main.handler()["statusCode"])
+                rss.assert_called_once()
+                if wp_link:
+                    update.assert_called_once()
+                    self.assertIn('utm_source=podcast_rss', rss.call_args.args[0])
+                else:
+                    update.assert_not_called()
+                    self.assertNotIn('utm_source', rss.call_args.args[0])
 
     def test_wordpress_metadata_and_escaped_intro(self):
         import wp_poster

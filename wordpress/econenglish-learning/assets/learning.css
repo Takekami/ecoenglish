@@ -22,3 +22,17 @@
 .eel-home{max-width:960px;margin:24px auto;padding:24px;background:#edf5f0;border:1px solid var(--eel-line);border-radius:12px}
 .eel-home strong{font-size:20px}
 @media(max-width:600px){.eel-home{margin:16px;padding:18px}.eel .eel-nav a{flex:1 1 180px;text-align:center}.eel ul.eel-cards{grid-template-columns:1fr}}
+.eel-lesson-section[hidden],[data-eel-controls][hidden],.eel-study [hidden]{display:none!important}
+.eel-study{padding:18px;background:#f3f7f4;border:1px solid var(--eel-line);border-radius:10px;margin:18px 0}
+.eel-study p{margin:8px 0}.eel-mode-buttons{display:flex;flex-wrap:wrap;gap:8px}
+.eel-study button{font:inherit;cursor:pointer;color:var(--eel-accent);background:#fff;border:1px solid #b5ccc1;border-radius:7px;padding:10px 14px;line-height:1.5}
+.eel-study button[aria-pressed=true]{background:var(--eel-ink);color:#fff}
+.eel-study button:focus-visible{outline:3px solid #b96b2b;outline-offset:3px}
+.eel-study nav{display:flex;flex-wrap:wrap;gap:16px;margin:15px 0}.eel-study nav a{color:var(--eel-accent);text-decoration:underline}
+.eel .eel-completed-label{display:inline-block;background:#e4f0e8;color:#215540;border-radius:4px;padding:2px 8px;font-size:12px;margin-top:8px}
+.eel .eel-weekly-item{padding:8px 0 24px;border-bottom:1px solid var(--eel-line)}
+.eel .eel-weekly-question{padding:16px;background:#f3f7f4;border-radius:8px;margin-top:18px}
+.eel .eel-help-links{padding-left:22px}.eel .eel-help-links li{margin:12px 0}
+.eel table{width:100%;border-collapse:collapse;font-size:14px;table-layout:fixed}
+.eel th,.eel td{border:1px solid var(--eel-line);padding:12px;vertical-align:top;text-align:left;overflow-wrap:anywhere}
+.eel th{background:#f3f7f4}.eel table th:first-child{width:32%}

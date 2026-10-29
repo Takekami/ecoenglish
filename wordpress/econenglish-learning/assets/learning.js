@@ -4,7 +4,9 @@
   const lesson = document.querySelector('[data-eel-page="lesson"]');
   const guide = document.querySelector('[data-eel-page="guide"]');
   const library = document.querySelector('[data-eel-page="library"]');
-  const root = lesson || guide || library || document.querySelector('.eel-home');
+  const weekly = document.querySelector('[data-eel-page="weekly"]');
+  const learningGuide = document.querySelector('[data-eel-page="learning-guide"]');
+  const root = lesson || guide || library || weekly || learningGuide || document.querySelector('.eel-home');
   const seen = new Set();
 
   // Use Site Kit's existing tag and consent settings; never insert another tracker.
@@ -24,6 +26,20 @@
     send(link.dataset.eelEvent, {
       target_lesson_id: link.dataset.eelTarget || '0',
       lesson_topic: link.dataset.eelTopic || 'all'
+    });
+  });
+
+  document.addEventListener('eel:learning', function (event) {
+    const data = event.detail || {};
+    if (data.name === 'lesson_mode_change' && ['full', 'listening'].includes(data.mode)) send(data.name, {study_mode: data.mode});
+    if (data.name === 'lesson_mark_complete' && ['marked', 'cleared'].includes(data.action)) send(data.name, {completion_action: data.action});
+  });
+
+  if (weekly) weekly.querySelectorAll('[data-eel-weekly-answer]').forEach(function (detail, index) {
+    detail.addEventListener('toggle', function () {
+      if (!detail.open || seen.has('weekly:' + index)) return;
+      seen.add('weekly:' + index);
+      send('weekly_answer_open', {question_group: 'true_false'});
     });
   });
 
