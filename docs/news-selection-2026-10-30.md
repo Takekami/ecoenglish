@@ -23,8 +23,10 @@ public WordPress API. This is targeted remediation, not a full historical fact a
    an explicit editorial rubric. These points are ranking aids, not calibrated
    confidence, learner-outcome evidence or formal CEFR ratings. Politics/security
    with incidental economic context do not meet the economic centrality threshold.
-4. Try up to 3 ranked eligible candidates. Retrieve actual source text; retain the
-   existing source sufficiency gate and article/RSS fallback policy.
+4. Inspect ranked eligible sources within the remaining execution-time budget.
+   Generate lessons for up to 3 sufficiently sourced candidates. Unreadable sources
+   do not consume the 3-candidate generation allowance. Retain the existing source
+   sufficiency gate and article/RSS fallback policy.
 5. Generate a source-supported lesson. On structural or semantic rejection, allow
    one correction per candidate, then re-run ALL structural and independent review
    gates. A still-invalid candidate or explicit generation SKIP moves to the next

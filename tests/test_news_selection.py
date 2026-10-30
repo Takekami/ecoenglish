@@ -86,6 +86,16 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(1,self.main.gpt.call_count)
         self.assert_no_writes()
 
+    def test_unreadable_top_three_do_not_hide_a_readable_fourth_candidate(self):
+        candidates=[dict(self.candidates[0],id=str(n),url=f'https://www.cnbc.com/{n}') for n in range(1,5)]
+        self.main.collect_candidates.return_value=candidates
+        self.main.rank_candidates.return_value=candidates
+        self.main.source_text.side_effect=['','','','source '*150]
+        result=self.main.handler({'dry_run':True})
+        self.assertEqual('4',result['candidate_id'])
+        self.assertEqual(1,self.main.gpt.call_count)
+        self.assert_no_writes()
+
     def test_generation_skip_then_next_candidate_reason_logged(self):
         self.main.gpt.side_effect=['SKIP: LOW_LEARNING_VALUE 専門的すぎる',markdown(lesson())]
         out=io.StringIO()

@@ -276,7 +276,8 @@ def prepare_daily_lesson(context=None, dry_run=False):
     def enough_time(reserve=210000):
         return context is None or context.get_remaining_time_in_millis() >= reserve
 
-    for candidate in ranked[:3]:
+    generation_attempts = 0
+    for candidate in ranked:
         cid, url = candidate['id'], candidate['url']
         if not enough_time():
             emit('run_finished', outcome='TIME_BUDGET', published=False)
@@ -287,6 +288,11 @@ def prepare_daily_lesson(context=None, dry_run=False):
         if not evidence:
             emit('candidate_rejected', candidate_id=cid, url=url, reason='INSUFFICIENT_SOURCE', decision_stage='source')
             continue
+        # Unreadable/paywalled sources must not consume the generation allowance.
+        if generation_attempts >= 3:
+            emit('run_finished', outcome='GENERATION_LIMIT', published=False)
+            return None
+        generation_attempts += 1
         try:
             md = gpt('B1+', candidate['title'], evidence, url)
             for attempt in range(2):
