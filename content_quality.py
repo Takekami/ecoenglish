@@ -45,35 +45,48 @@ def enough_source(text):
     return len(re.findall(r"\b[\w'-]+\b", text)) >= 120
 
 
-def source_text(url, rss_text):
+def source_text(url, rss_text, diagnostics=None):
     """Prefer extracted article body. Never bypass paywalls or follow redirects.
 
     Only the three configured publishers may be requested. Long RSS content can
     be used when extraction is unavailable; headlines/short summaries cannot.
     """
+    detail = diagnostics if isinstance(diagnostics, dict) else {}
+    detail.update(reason='SOURCE_UNAVAILABLE', article_words=0,
+                  rss_words=len(plain_text(rss_text).split()))
     parsed = urlsplit(url)
     if (parsed.scheme != "https" or parsed.hostname not in SOURCE_HOSTS
             or parsed.port not in (None, 443) or parsed.username or parsed.password):
+        detail['reason'] = 'SOURCE_URL_NOT_ALLOWED'
         return ""
     try:
         with requests.get(url, timeout=(5, 15), allow_redirects=False, stream=True) as response:
+            detail['http_status'] = response.status_code
+            detail['reason'] = f'HTTP_{response.status_code}'
             if response.status_code == 200 and "text/html" in response.headers.get("Content-Type", ""):
                 chunks, size = [], 0
                 for chunk in response.iter_content(65536):
                     size += len(chunk)
                     if size > 2_000_000:
+                        detail['reason'] = 'SOURCE_TOO_LARGE'
                         break
                     chunks.append(chunk)
                 else:
                     body = trafilatura.extract(
                         b"".join(chunks), include_comments=False, include_tables=False,
                     ) or ""
+                    detail['article_words'] = len(body.split())
                     if enough_source(body):
+                        detail['reason'] = 'ARTICLE_EXTRACTED'
                         return body[:24000]
-    except (requests.RequestException, ValueError):
-        pass
+                    detail['reason'] = 'EXTRACTED_TEXT_TOO_SHORT'
+    except (requests.RequestException, ValueError) as error:
+        detail['reason'] = type(error).__name__
     fallback = plain_text(rss_text)
-    return fallback[:24000] if enough_source(fallback) else ""
+    if enough_source(fallback):
+        detail['reason'] = 'SUBSTANTIVE_RSS_FALLBACK'
+        return fallback[:24000]
+    return ''
 
 
 def parse_lesson(md):
@@ -101,6 +114,11 @@ def validate_lesson(sections):
         errors.append("grammar quote not in script")
     if normalized(quote) not in normalized(sections["Grammar Point"]):
         errors.append("grammar explanation must quote the selected script sentence")
+    # Catch a concrete recurring mismatch; semantic review still handles other grammar.
+    label = sections['Grammar Point'].split('–')[0].split('—')[0].lower()
+    if ('present perfect' in label or '現在完了' in label) and not re.search(
+            r"\b(?:have|has)\s+(?!(?:to|a|an|the)\b)\w+", quote, re.I):
+        errors.append('present perfect label does not match quoted sentence')
     for name, count in (("Listening Questions", 3), ("Reading Questions", 3), ("Answers", 6)):
         numbers = re.findall(r"^(\d+)\.\s+\S", sections[name], re.M)
         if numbers != [str(i) for i in range(1, count + 1)]:

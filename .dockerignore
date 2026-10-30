@@ -10,3 +10,7 @@ __pycache__
 *.pyc
 docs/backups
 *.zip
+output
+.youtube-secrets
+.venv-youtube
+shorts

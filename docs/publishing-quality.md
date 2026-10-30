@@ -1,5 +1,10 @@
 # Publishing quality gates
 
+2026-10-30: source selection now compares candidates across all three feeds and
+supports a bounded correction/next-candidate path. See
+[selection and recovery](news-selection-2026-10-30.md) for ranking, decision logs
+and the explicit non-publishing dry-run event. Existing factual gates remain.
+
 The pipeline now runs these checks **before TTS, S3, Spreaker or WordPress writes**:
 
 1. Extract the linked news article with trafilatura, requesting only HTTPS URLs on the three configured publishers. Redirects are not followed, downloads are bounded, and no paywalls/login barriers are bypassed.
@@ -12,4 +17,4 @@ A rejected/undersourced lesson logs `INSUFFICIENT_SOURCE`, `QUALITY_SKIP` or `RE
 
 The WordPress title uses the Japanese Title; the manual excerpt uses Meta Description. The current AIOSEO configuration derives its description from that excerpt (verified on the manually improved Royal Mail article). Introduction is rendered at the start of each new post. Existing posts are not bulk-rewritten. Theme/SEO settings must continue to use the excerpt; this integration needs post-deployment verification on one new post.
 
-Run offline tests: `python -m unittest discover -s tests -v`. They mock all paid API and publishing calls. Deployment remains the repository's manual GitHub Actions workflow. Verify source selection and one generated lesson without invoking the publishing handler before a production rollout. Never run `handler()` as a smoke test: it publishes.
+Run offline tests: `python -m unittest discover -s tests -v`. They mock all paid API and publishing calls. Deployment remains the repository's manual GitHub Actions workflow. Only the explicit `handler({"dry_run": true})` event is a non-publishing preflight; it still uses text-model calls. Never run `handler()` with an empty/default event as a smoke test: that path publishes.

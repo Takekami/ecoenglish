@@ -76,6 +76,16 @@ class PublishBoundaryTests(unittest.TestCase):
                 patch("boto3.client"):
             cls.main = importlib.import_module("main")
 
+    def setUp(self):
+        candidate = {'id':'test-news', 'title':'News', 'summary':'Facts',
+                     'url':'https://www.cnbc.com/story', 'selection_reason':'経済の教材',
+                     'published_at':'2026-10-30T00:00:00Z'}
+        for name, value in (('recent_lessons',(set(), [])),
+                            ('collect_candidates',[candidate]), ('rank_candidates',[candidate]),
+                            ('repair_lesson','SKIP: REPAIR_REJECTED')):
+            patcher=patch.object(self.main,name,return_value=value)
+            patcher.start(); self.addCleanup(patcher.stop)
+
     def test_invalid_or_rejected_lessons_have_no_publish_side_effects(self):
         main = self.main
         article = SimpleNamespace(title="News", summary="Facts", link="https://www.cnbc.com/story")

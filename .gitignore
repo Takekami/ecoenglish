@@ -20,6 +20,10 @@ venv/
 
 # Secrets
 .env
+.youtube-secrets/
+.venv-youtube/
+client_secret*.json
+youtube-token*.json
 
 # Build & Output
 *.zip
