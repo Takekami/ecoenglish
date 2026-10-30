@@ -74,3 +74,26 @@ Official OpenAI JSON-mode reference consulted:
 https://developers.openai.com/api/docs/guides/structured-outputs
 JSON mode is parsed and validated explicitly; missing/malformed ranking or review
 fields never permit publication.
+
+## Production verification receipt
+
+- Initial deployment: commit `2a3364b`, Actions run `40999058158` successful.
+- Source-retry cap correction: commit `a9498d7`, Actions run `41000999136`
+  successful. Container tests: 37 passed. Lambda update status Successful;
+  deployed image digest `6d3db44fff0455494f426b5eee3f5fda18116a3c312cf1e098e0a7d291cc773a`.
+- Two explicit dry runs were invoked. The final run ID was
+  `fcff84ca-49fa-40a9-8670-149d209ecf9b`: 3 feeds, 18 compared candidates,
+  9 eligible ranking results, 9 source checks. Five CNBC sources returned HTTP
+  403; three Nikkei sources yielded short text (113, 58, 44 words). One CNA
+  source yielded 228 words and reached generation, which returned
+  `SKIP: TOPIC_MISMATCH 軍事行動に関連する話題のため。`.
+- Final outcome NO_ELIGIBLE_LESSON; no FunctionError. No audio, episode, blog or
+  RSS was created. The final run proves source fallback beyond the first three
+  candidates and reason logging; it does not prove a real generated lesson
+  passed all gates. Repair/full-review success paths were verified offline with
+  mocked inputs. Model-provided rejection reasons are recorded judgments, not
+  independently established truth.
+- Current constraints remain: source accessibility and the six-per-feed shortlist
+  can limit daily supply. No paywall/access restriction was bypassed and the
+  source sufficiency threshold was not lowered to force publication.
+- SHORTS_DRAFT_EXPORT remains unset. YouTube scheduling was not changed.
