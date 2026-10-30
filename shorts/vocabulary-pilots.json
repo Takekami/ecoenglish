@@ -1,0 +1,71 @@
+{
+  "version": 5,
+  "format": "japanese_to_english_vocabulary",
+  "reviewed_on": "2026-10-29",
+  "publication_status": "local_preview_only",
+  "videos": [
+    {
+      "id": "01-inflation",
+      "japanese_voice": "marin",
+      "title": "「インフレ」を英語で｜今日覚える表現",
+      "japanese_term": "インフレ",
+      "english_term": "inflation",
+      "hook_audio": "「インフレ」。今日は、こんな英語表現を覚えましょう。",
+      "english_example": "Inflation slowed last month.",
+      "translation": "先月、インフレが鈍化した。",
+      "translation_audio": "「先月、インフレが鈍化した」という意味です。",
+      "extension": {
+        "label": "応用：言葉を組み合わせる",
+        "japanese": "インフレ率",
+        "english": "the inflation rate",
+        "intro": "ここからは、言葉の組み合わせです。「インフレ率」も覚えておきましょう。",
+        "note": "inflation ＋ rate → インフレ率"
+      },
+      "source_label": "用語の背景：英国国家統計局（ONS）",
+      "source_url": "https://www.ons.gov.uk/aboutus/usingpublicdatatoproducestatistics/learningaboutdata/learnmoreaboutwhoweareandwhatwedo/whatisinflationandhowdowecalculateit",
+      "lesson_url": "https://econenglish.jp/inflation-news-english-vocabulary/"
+    },
+    {
+      "id": "02-rate-cut",
+      "japanese_voice": "cedar",
+      "title": "「利下げ」を英語で｜今日覚える表現",
+      "japanese_term": "利下げ",
+      "english_term": "a rate cut",
+      "hook_audio": "「利下げ」。今日は、こんな英語表現を覚えましょう。",
+      "english_example": "The central bank announced a rate cut.",
+      "translation": "中央銀行が利下げを発表した。",
+      "translation_audio": "「中央銀行が利下げを発表した」という意味です。",
+      "extension": {
+        "label": "応用：動詞で言うなら",
+        "japanese": "利下げをする",
+        "english": "cut interest rates",
+        "intro": "ここからは、動詞を使った言い方です。「利下げをする」なら、こう言えます。",
+        "note": "a rate cut（名詞）→ cut interest rates（動作）"
+      },
+      "source_label": "用語の背景：イングランド銀行",
+      "source_url": "https://www.bankofengland.co.uk/explainers/what-are-interest-rates",
+      "lesson_url": "https://econenglish.jp/lesson-library/"
+    },
+    {
+      "id": "03-exports",
+      "japanese_voice": "marin",
+      "title": "「輸出」を英語で｜今日覚える表現",
+      "japanese_term": "輸出",
+      "english_term": "exports",
+      "hook_audio": "「輸出」。今日は、こんな英語表現を覚えましょう。",
+      "english_example": "Exports rose last month.",
+      "translation": "先月、輸出が増えた。",
+      "translation_audio": "「先月、輸出が増えた」という意味です。",
+      "extension": {
+        "label": "応用：動詞で言うなら",
+        "japanese": "商品を輸出する",
+        "english": "export goods",
+        "intro": "ここからは、動詞を使った言い方です。「商品を輸出する」なら、こう言えます。",
+        "note": "exports（輸出）→ export（輸出する）"
+      },
+      "source_label": "用語の背景：米国経済分析局（BEA）",
+      "source_url": "https://www.bea.gov/data/intl-trade-investment/international-trade-goods-and-services",
+      "lesson_url": "https://econenglish.jp/lesson-library/"
+    }
+  ]
+}

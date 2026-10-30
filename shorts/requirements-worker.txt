@@ -1,0 +1,6 @@
+-r requirements-preview.txt
+-r requirements-youtube.txt
+boto3>=1.35,<2
+openai>=2,<4
+requests>=2.32,<3
+trafilatura>=2,<3

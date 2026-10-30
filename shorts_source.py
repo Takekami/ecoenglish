@@ -85,15 +85,22 @@ def validate_provenance(item, script):
 def validate_usage_review(selection, review):
     """Validate a separately recorded primary-source editorial check.
 
-    This does not fetch a page or establish frequency. The editor must actually
-    read the reference; generation output is never accepted as its own review.
+    This validator does not fetch a page or establish frequency. Manual records
+    require an editor's actual source check; automated records require a separate
+    fetched-page/context-review stage. Generation is never its own attestation.
     """
     if not isinstance(review, dict) or review.get('status') != 'verified':
         return False
     if (review.get('expression') != selection.get('expression')
             or review.get('script_sha256') != selection.get('script_sha256')
-            or review.get('method') != 'primary_source_editorial_check'):
+            or review.get('method') not in ('primary_source_editorial_check', 'primary_source_automated_check')):
         return False
+    if review.get('method') == 'primary_source_automated_check':
+        if review.get('context_review_passed') is not True:
+            return False
+        if any(not re.fullmatch(r'[0-9a-f]{64}', r.get('page_sha256', ''))
+               for r in review.get('references', [])):
+            return False
     note = review.get('transfer_note_ja', '')
     contexts = review.get('reuse_contexts_ja', [])
     if (not isinstance(note, str) or not re.search(r'[ぁ-んァ-ヶ一-龠]', note)

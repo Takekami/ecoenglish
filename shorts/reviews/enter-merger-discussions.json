@@ -1,0 +1,20 @@
+{
+  "status": "verified",
+  "method": "primary_source_editorial_check",
+  "expression": "enter merger discussions",
+  "script_sha256": "932d67a840229cd534e13feb4503047172a2c50f295c362cf1c4dabbe76d18f5",
+  "references": [
+    {
+      "kind": "company_announcement",
+      "publisher": "Arion Bank hf. / Nasdaq issuer announcement",
+      "title": "Arion Bank and Kvika enter merger discussions",
+      "url": "https://view.news.eu.nasdaq.com/view?id=b07a4285b2da297d8eac65d56eeb9b48e&lang=en&src=micro",
+      "excerpt": "Arion Bank and Kvika enter merger discussions",
+      "checked_on": "2026-10-29"
+    }
+  ],
+  "transfer_note_ja": "銀行以外の企業の合併協議にも使える。特定の企業名や今回のニュース固有の事実を覚える表現ではなく、協議を開始する行為を表す。",
+  "reuse_contexts_ja": ["銀行同士の合併協議", "製造業など他業種の企業間の合併協議"],
+  "frequency_claim": "not_assessed",
+  "scope_note_ja": "実際の使用例を確認した記録。高頻度・最も一般的・唯一の正解であることは示さない。"
+}
