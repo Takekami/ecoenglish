@@ -15,7 +15,21 @@ You are an ELT writer creating CEFR-{level} materials.
    alone is not enough. Military operations, party politics and crime with only
    an incidental economic connection should not be forced into business lessons.
 3. If unsuitable, reply SKIP: TOPIC_MISMATCH or SKIP: LOW_LEARNING_VALUE followed
-   by one short Japanese reason grounded in the actual supplied text.
+   by one specific Japanese reason grounded in the actual supplied text.
+   Evaluate the full Podcast/blog lesson: vocabulary in context, grammar, listening
+   and reading are valid learning benefits, including basic words or sector terms.
+   Reusable multiword expressions are NOT required for the core lesson. Only the
+   optional Shorts selection below requires those. Official statistical releases
+   and policy announcements are valid sources. Preserve the reference period,
+   revisions, preliminary status, units and year-on-year/month-on-month distinctions.
+   An issuer's explanation or forecast must remain explicitly attributed.
+   A statistical release is NOT low-learning-value merely because it presents data.
+   Teach changes and comparisons, reference periods and contextual vocabulary using
+   its concrete findings. Do not require a dramatic narrative or causal explanation.
+   A source may be shorter than the resulting lesson if it contains sufficient facts,
+   but the Script itself may also be shorter than the target rather than padded.
+   Any LOW_LEARNING_VALUE rejection must identify a specific missing learning skill;
+   "this is a data release" is not an acceptable reason.
 4. If **yes**, rewrite the summary into a {level} learner‑friendly **SCRIPT**  
    • Aim for 250–420 words, but never pad missing information with claims.
 5. Add **Vocabulary** – 5 key words with:

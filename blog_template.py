@@ -1,6 +1,23 @@
 from markdown import markdown
 import re
 from html import escape
+from source_catalog import source_credit
+
+
+def source_notice(url, published_at=None):
+    credit = source_credit(url)
+    date = escape(published_at or '', quote=True)
+    link = escape(url, quote=True)
+    if not credit:
+        return f'<p class="text-muted">Source: <a href="{link}">{link}</a></p>'
+    name, licence, terms = credit
+    return (
+        f'<p class="text-muted" data-eel-source-date="{date}">'
+        f'出典：<a href="{link}">{escape(name)}</a>'
+        f'（<a href="{escape(terms, quote=True)}">{escape(licence)}</a>）。'
+        '公表資料を基にEconenglishが英語学習用に編集・翻訳して作成。</p>'
+    )
+
 
 def build_blog_post_html(
     level: str,
@@ -17,6 +34,7 @@ def build_blog_post_html(
     jp: str,
     audio_url: str,
     introduction: str = "",
+    source_published_at: str = None,
 ) -> str:
     # 1) Clean answers
     answers = [
@@ -150,6 +168,6 @@ def build_blog_post_html(
         + "<h2>📚 Reading Questions</h2>"
         + reading_html
         + jp_html
-        + f'<p class="text-muted">Source: <a href="{url}">{url}</a></p>'
+        + source_notice(url, source_published_at)
     )
     return html.strip()

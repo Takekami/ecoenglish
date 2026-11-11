@@ -6,13 +6,14 @@ from urllib.parse import urlsplit
 
 import requests
 import trafilatura
+from source_catalog import SOURCES
 
 SECTIONS = (
     "Script", "Vocabulary", "Listening Questions", "Reading Questions", "Answers",
     "Grammar Point", "Grammar Quote", "使用場面", "使用例文", "日本語での経済ニュース解説",
     "Japanese Title", "Meta Description", "Introduction",
 )
-SOURCE_HOSTS = {"asia.nikkei.com", "www.channelnewsasia.com", "www.cnbc.com"}
+SOURCE_HOSTS = set(SOURCES) | {"asia.nikkei.com", "www.channelnewsasia.com", "www.cnbc.com"}
 
 
 class PlainText(HTMLParser):
@@ -48,7 +49,7 @@ def enough_source(text):
 def source_text(url, rss_text, diagnostics=None):
     """Prefer extracted article body. Never bypass paywalls or follow redirects.
 
-    Only the three configured publishers may be requested. Long RSS content can
+    Only configured hosts may be requested. Long RSS content can
     be used when extraction is unavailable; headlines/short summaries cannot.
     """
     detail = diagnostics if isinstance(diagnostics, dict) else {}
@@ -73,7 +74,8 @@ def source_text(url, rss_text, diagnostics=None):
                     chunks.append(chunk)
                 else:
                     body = trafilatura.extract(
-                        b"".join(chunks), include_comments=False, include_tables=False,
+                        b"".join(chunks), include_comments=False,
+                        include_tables=parsed.hostname in SOURCES,
                     ) or ""
                     detail['article_words'] = len(body.split())
                     if enough_source(body):

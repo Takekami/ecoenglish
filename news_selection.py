@@ -3,15 +3,42 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 import hashlib
 import re
-from urllib.parse import urlsplit, urlunsplit
+from concurrent.futures import ThreadPoolExecutor
+from urllib.parse import urlsplit, urlunsplit, urljoin
 
 import feedparser
 import requests
+from lxml import html
+from lxml.etree import ParserError
 
-from content_quality import SOURCE_HOSTS, plain_text
+from content_quality import SOURCE_HOSTS, plain_text, source_text
+from source_catalog import STAT_UPDATES, history_key
 
 MAX_PER_FEED = 6
 MAX_AGE_DAYS = 7
+
+
+def statistics_entries(content, now):
+    """Read the Bureau's dated update list, not navigation or guessed dates."""
+    document = html.fromstring(content)
+    entries = []
+    for listing in document.xpath('//article/ul'):
+        previous = listing.getprevious()
+        date_text = (previous.tail or '').strip() if previous is not None else ''
+        try:
+            stamp = datetime.strptime(f'{date_text} {now.year}', '%B %d %Y').replace(tzinfo=timezone(timedelta(hours=9)))
+            if stamp > now + timedelta(days=1):
+                stamp = stamp.replace(year=now.year - 1)
+        except ValueError:
+            continue
+        for anchor in listing.xpath('./li/a'):
+            link = urljoin(STAT_UPDATES, anchor.get('href', ''))
+            if not link.startswith('https://www.stat.go.jp/english/data/'):
+                continue
+            title = ' '.join(anchor.itertext()).strip()
+            entries.append({'link':link, 'title':title, 'summary':title,
+                            'published':stamp.isoformat()})
+    return entries
 
 
 def canonical_url(url):
@@ -45,7 +72,7 @@ def entry_time(entry):
     return None
 
 
-def collect_candidates(feeds, emit, recent_urls=(), now=None):
+def collect_candidates(feeds, emit, recent_urls=(), now=None, with_sources=False):
     now = now or datetime.now(timezone.utc)
     seen = set(recent_urls)
     candidates = []
@@ -56,8 +83,9 @@ def collect_candidates(feeds, emit, recent_urls=(), now=None):
             if len(response.content) > 2_000_000:
                 emit('feed_rejected', feed=feed, reason='FEED_TOO_LARGE')
                 continue
-            entries = feedparser.parse(response.content).entries
-        except requests.RequestException as error:
+            entries = (statistics_entries(response.content, now) if feed == STAT_UPDATES
+                       else feedparser.parse(response.content).entries)
+        except (requests.RequestException, ParserError, ValueError) as error:
             emit('feed_failed', feed=feed, reason=type(error).__name__)
             continue
         eligible = []
@@ -66,12 +94,13 @@ def collect_candidates(feeds, emit, recent_urls=(), now=None):
             title = plain_text(entry.get('title', ''))[:350]
             if not url or not title:
                 continue
-            cid = candidate_id(url)
-            if url in seen:
+            stamp = entry_time(entry)
+            key = history_key(url, stamp.isoformat() if stamp else None)
+            cid = candidate_id(key)
+            if key in seen:
                 emit('candidate_rejected', candidate_id=cid, url=url, reason='DUPLICATE_OR_ALREADY_PUBLISHED')
                 continue
-            seen.add(url)
-            stamp = entry_time(entry)
+            seen.add(key)
             if stamp and (stamp < now - timedelta(days=MAX_AGE_DAYS) or stamp > now + timedelta(hours=6)):
                 emit('candidate_rejected', candidate_id=cid, url=url, reason='SOURCE_DATE_OUT_OF_RANGE', source_date=stamp.isoformat())
                 continue
@@ -86,7 +115,24 @@ def collect_candidates(feeds, emit, recent_urls=(), now=None):
                  feed=feed, source_date=c['published_at'], reason='DATE_UNKNOWN' if not c['published_at'] else 'ELIGIBLE')
         candidates.extend(eligible[:MAX_PER_FEED])
         emit('feed_scanned', feed=feed, entries=len(entries), shortlisted=min(len(eligible), MAX_PER_FEED))
-    return candidates
+    if not with_sources or not candidates:
+        return candidates
+
+    def fetch(candidate):
+        details = {}
+        evidence = source_text(candidate['url'], candidate['summary'], details)
+        return candidate, evidence, details
+
+    usable = []
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        for candidate, evidence, details in pool.map(fetch, candidates):
+            emit('source_checked', candidate_id=candidate['id'], url=candidate['url'], **details)
+            if evidence:
+                usable.append(dict(candidate, source_evidence=evidence, source_excerpt=evidence[:4000]))
+            else:
+                emit('candidate_rejected', candidate_id=candidate['id'], url=candidate['url'],
+                     reason='INSUFFICIENT_SOURCE', decision_stage='source')
+    return usable
 
 
 def recent_lessons(emit):
@@ -101,10 +147,15 @@ def recent_lessons(emit):
         urls, titles = set(), []
         for post in posts:
             titles.append(plain_text(post.get('title', {}).get('rendered', ''))[:250])
-            for href in re.findall(r'href=[\"\']([^\"\']+)', post.get('content', {}).get('rendered', '')):
+            content = post.get('content', {}).get('rendered', '')
+            document = html.fromstring(content or '<div></div>')
+            for anchor in document.xpath('//a[@href]'):
+                href = anchor.get('href')
                 url = canonical_url(href)
                 if url:
-                    urls.add(url)
+                    parents = anchor.xpath('ancestor::*[@data-eel-source-date]')
+                    date = parents[-1].get('data-eel-source-date') if parents else None
+                    urls.add(history_key(url, date))
         emit('history_loaded', lessons=len(posts), source_urls=len(urls))
         return urls, titles
     except (requests.RequestException, ValueError, TypeError, KeyError) as error:
