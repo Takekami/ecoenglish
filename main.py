@@ -180,8 +180,8 @@ URL: {link}
     ans = r.choices[0].message.content.strip()
     return _parse_yes_no(ans), ans
 
-def gpt(level: str, title: str, summary: str, link: str) -> str:
-    prompt = get_prompt_for_level(level, title, summary, link)
+def gpt(level: str, title: str, summary: str, link: str, selection_reason: str = '') -> str:
+    prompt = get_prompt_for_level(level, title, summary, link, selection_reason)
     r = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
@@ -289,7 +289,6 @@ def prepare_daily_lesson(context=None, dry_run=False):
     def enough_time(reserve=210000):
         return context is None or context.get_remaining_time_in_millis() >= reserve
 
-    generation_attempts = 0
     for candidate in ranked:
         cid, url = candidate['id'], candidate['url']
         if not enough_time():
@@ -303,17 +302,24 @@ def prepare_daily_lesson(context=None, dry_run=False):
         if not evidence:
             emit('candidate_rejected', candidate_id=cid, url=url, reason='INSUFFICIENT_SOURCE', decision_stage='source')
             continue
-        # Unreadable/paywalled sources must not consume the generation allowance.
-        if generation_attempts >= 3:
-            emit('run_finished', outcome='GENERATION_LIMIT', published=False)
-            return None
-        generation_attempts += 1
+        # The feed shortlist bounds candidates; the remaining Lambda time bounds
+        # paid calls. A fixed three-candidate cap stranded usable ranked sources.
         try:
-            md = gpt('B1+', candidate['title'], evidence, url)
+            md = gpt('B1+', candidate['title'], evidence, url,
+                     selection_reason=candidate['selection_reason'])
             for attempt in range(2):
                 if md.startswith('SKIP'):
                     emit('candidate_rejected', candidate_id=cid, url=url,
                          reason=md[:500], decision_stage='generation', attempt=attempt+1)
+                    if md.startswith('SKIP: LOW_LEARNING_VALUE') and attempt == 0 and enough_time():
+                        emit('repair_started', candidate_id=cid, reason='EDITORIAL_DISAGREEMENT')
+                        md = gpt('B1+', candidate['title'], evidence, url,
+                                 selection_reason=candidate['selection_reason'] +
+                                 ' A previous generation incorrectly returned LOW_LEARNING_VALUE. '
+                                 'Write the approved lesson using source-supported vocabulary, '
+                                 'comparisons and grammar. If facts are insufficient, return '
+                                 'SKIP: SOURCE_INSUFFICIENT instead of inventing details.')
+                        continue
                     break
                 try:
                     sections = parse_lesson(md)

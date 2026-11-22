@@ -1,4 +1,5 @@
-def get_prompt_for_level(level: str, title: str, summary: str, url: str) -> str:
+def get_prompt_for_level(level: str, title: str, summary: str, url: str,
+                         selection_reason: str = '') -> str:
     return f"""
 ### ROLE
 You are an ELT writer creating CEFR-{level} materials.
@@ -10,12 +11,16 @@ You are an ELT writer creating CEFR-{level} materials.
    or background to reach a word target. Preserve uncertainty and chronology.
    If insufficient facts are available, reply SKIP: SOURCE_INSUFFICIENT followed
    by one short Japanese reason. Never return a bare SKIP without a reason.
-2. Confirm that economics or business is CENTRAL to the supplied story and that
-   it supports a useful intermediate English lesson. Social/political importance
-   alone is not enough. Military operations, party politics and crime with only
-   an incidental economic connection should not be forced into business lessons.
-3. If unsuitable, reply SKIP: TOPIC_MISMATCH or SKIP: LOW_LEARNING_VALUE followed
-   by one specific Japanese reason grounded in the actual supplied text.
+2. The upstream editor has already approved this source's economic relevance and
+   learning value. Your job is to WRITE the selected lesson, not rank it again.
+   Use the editorial rationale in the input as guidance for teachable skills,
+   never as evidence for factual claims. Derive all facts from Source text only.
+3. Do not return LOW_LEARNING_VALUE merely because the source is statistical,
+   technical, or lacks a narrative. Teach the supported findings using comparisons,
+   numbers, vocabulary in context and actual grammar from your script. If the
+   source is actually unrelated to economics/business, return SKIP: TOPIC_MISMATCH
+   with a specific source-grounded reason. If factual evidence is insufficient,
+   return SKIP: SOURCE_INSUFFICIENT. Never invent facts to avoid a skip.
    Evaluate the full Podcast/blog lesson: vocabulary in context, grammar, listening
    and reading are valid learning benefits, including basic words or sector terms.
    Reusable multiword expressions are NOT required for the core lesson. Only the
@@ -28,8 +33,6 @@ You are an ELT writer creating CEFR-{level} materials.
    its concrete findings. Do not require a dramatic narrative or causal explanation.
    A source may be shorter than the resulting lesson if it contains sufficient facts,
    but the Script itself may also be shorter than the target rather than padded.
-   Any LOW_LEARNING_VALUE rejection must identify a specific missing learning skill;
-   "this is a data release" is not an acceptable reason.
 4. If **yes**, rewrite the summary into a {level} learner‑friendly **SCRIPT**  
    • Aim for 250–420 words, but never pad missing information with claims.
 5. Add **Vocabulary** – 5 key words with:
@@ -152,6 +155,7 @@ OR null. Optional extension object uses label, japanese, english, intro, note
 ```  
 INPUT  
 Headline: {title}  
+Editorial rationale (guidance only): {selection_reason}
 Source text: {summary}
 URL: {url}
 """

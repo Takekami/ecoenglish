@@ -1,5 +1,15 @@
 # Publishing quality gates
 
+2026-11-22: lesson generation receives the approved editor's learning rationale
+and is instructed to write the selected lesson rather than repeat topic/learning
+ranking. An explicit `SKIP: LOW_LEARNING_VALUE` permits one fresh generation for
+that source, using the same source and full output contract. Source-insufficiency
+and topic-mismatch skips still move on without this retry. Every generated result
+must pass the unchanged structural and independent factual/answer review gates.
+The three-candidate generation cap has been removed: the bounded feed shortlist
+and remaining Lambda execution time limit candidate fallback. This can increase
+text-model usage; publication is still never guaranteed or forced.
+
 2026-11-11: active inputs are Statistics Bureau of Japan's dated English updates,
 MOF Japan's English RSS, BEA news RSS, and FRB monetary-policy and speech RSS.
 Reuse notices are recorded in `source_catalog.py`; published lessons credit the

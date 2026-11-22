@@ -24,13 +24,15 @@ public WordPress API. This is targeted remediation, not a full historical fact a
    confidence, learner-outcome evidence or formal CEFR ratings. Politics/security
    with incidental economic context do not meet the economic centrality threshold.
 4. Inspect ranked eligible sources within the remaining execution-time budget.
-   Generate lessons for up to 3 sufficiently sourced candidates. Unreadable sources
-   do not consume the 3-candidate generation allowance. Retain the existing source
+   Generate lessons for sufficiently sourced candidates while time remains
+   (the original three-candidate cap was removed on 2026-11-22). Retain the existing source
    sufficiency gate and article/RSS fallback policy.
 5. Generate a source-supported lesson. On structural or semantic rejection, allow
    one correction per candidate, then re-run ALL structural and independent review
    gates. A still-invalid candidate or explicit generation SKIP moves to the next
-   candidate. Never fall back after external publication has started.
+   candidate. Since 2026-11-22, a LOW_LEARNING_VALUE skip gets one fresh generation
+   guided by the approved editorial rationale before moving on. Never fall back
+   after external publication has started.
 6. Respect the existing 300-second Lambda limit: reserve time for review and
    publication; a depleted time budget produces an explicit hold outcome. API
    calls have a 45-second client timeout and no automatic SDK retries. Candidate

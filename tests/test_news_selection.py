@@ -97,13 +97,53 @@ class RecoveryTests(unittest.TestCase):
         self.assert_no_writes()
 
     def test_generation_skip_then_next_candidate_reason_logged(self):
-        self.main.gpt.side_effect=['SKIP: LOW_LEARNING_VALUE 専門的すぎる',markdown(lesson())]
+        self.main.gpt.side_effect=['SKIP: SOURCE_INSUFFICIENT 本文不足',markdown(lesson())]
         out=io.StringIO()
         with patch('sys.stdout',out): result=self.main.handler({'dry_run':True})
         self.assertEqual('2',result['candidate_id'])
         events=[json.loads(line) for line in out.getvalue().splitlines() if line.startswith('{')]
-        self.assertTrue(any(e.get('decision_stage')=='generation' and 'LOW_LEARNING_VALUE' in e['reason'] for e in events))
+        self.assertTrue(any(e.get('decision_stage')=='generation' and 'SOURCE_INSUFFICIENT' in e['reason'] for e in events))
         self.assertEqual(1,len({e['run_id'] for e in events}))
+        self.assert_no_writes()
+
+    def test_editorial_disagreement_retries_same_source_and_runs_all_gates(self):
+        self.main.gpt.side_effect=['SKIP: LOW_LEARNING_VALUE データのみ',markdown(lesson())]
+        result=self.main.handler({'dry_run':True})
+        self.assertEqual('1',result['candidate_id'])
+        self.assertEqual(2,self.main.gpt.call_count)
+        self.assertIn('previous generation',self.main.gpt.call_args.kwargs['selection_reason'])
+        self.main.review_lesson.assert_called_once()
+        self.assert_no_writes()
+
+    def test_repeated_editorial_skip_is_bounded_and_moves_on(self):
+        self.main.gpt.side_effect=['SKIP: LOW_LEARNING_VALUE データのみ']*2+[markdown(lesson())]
+        result=self.main.handler({'dry_run':True})
+        self.assertEqual('2',result['candidate_id'])
+        self.assertEqual(3,self.main.gpt.call_count)
+        self.assert_no_writes()
+
+    def test_three_generation_skips_do_not_hide_a_fourth_candidate(self):
+        candidates=[dict(self.candidates[0],id=str(n)) for n in range(1,5)]
+        self.main.rank_candidates.return_value=candidates
+        self.main.gpt.side_effect=['SKIP: SOURCE_INSUFFICIENT 本文不足']*3+[markdown(lesson())]
+        result=self.main.handler({'dry_run':True})
+        self.assertEqual('4',result['candidate_id'])
+        self.assertEqual(4,self.main.gpt.call_count)
+        self.assert_no_writes()
+
+    def test_editorial_retry_cannot_bypass_validation_or_review(self):
+        self.main.gpt.side_effect=['SKIP: LOW_LEARNING_VALUE データのみ','### Script\nInvalid']*2
+        self.assertEqual(204,self.main.handler({'dry_run':True})['statusCode'])
+        self.main.review_lesson.assert_not_called()
+        self.assert_no_writes()
+
+    def test_remaining_time_stops_fallback_after_three_skips(self):
+        self.main.rank_candidates.return_value=[dict(self.candidates[0],id=str(n)) for n in range(1,5)]
+        self.main.gpt.return_value='SKIP: SOURCE_INSUFFICIENT 本文不足'
+        context=SimpleNamespace(aws_request_id='budget-test',
+            get_remaining_time_in_millis=MagicMock(side_effect=[250000,230000,210000,190000]))
+        self.assertEqual(204,self.main.handler({'dry_run':True},context)['statusCode'])
+        self.assertEqual(3,self.main.gpt.call_count)
         self.assert_no_writes()
 
     def test_invalid_grammar_repaired_once_then_full_review(self):
