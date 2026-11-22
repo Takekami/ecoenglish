@@ -9,6 +9,12 @@ must pass the unchanged structural and independent factual/answer review gates.
 The three-candidate generation cap has been removed: the bounded feed shortlist
 and remaining Lambda execution time limit candidate fallback. This can increase
 text-model usage; publication is still never guaranteed or forced.
+Production preflight also exposed missing practice-example sections and grammar
+errors. Generation and repair now use the same `gpt-6-luna` model already used
+for editorial ranking, with deterministic temperature and a system instruction
+listing all required sections. Independent review remains on `gpt-4o` and its
+five approval checks are unchanged. The repair prompt explicitly restores missing
+sections instead of only asking to preserve existing ones.
 
 2026-11-11: active inputs are Statistics Bureau of Japan's dated English updates,
 MOF Japan's English RSS, BEA news RSS, and FRB monetary-policy and speech RSS.
